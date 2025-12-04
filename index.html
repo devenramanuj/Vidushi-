@@ -490,7 +490,7 @@
                 <div class="chat-header">
                     <div class="status-indicator">
                         <div class="status-dot"></div>
-                        <span id="connectionStatus">Connected to Gemini AI</span>
+                        <span id="connectionStatus">Add your Gemini API Key</span>
                     </div>
                     <button class="btn secondary" id="clearBtn">
                         <i class="fas fa-trash"></i> Clear Chat
@@ -500,7 +500,9 @@
                 <div class="chat-messages" id="chatMessages">
                     <div class="welcome-message">
                         <h3>Welcome to Gemini Live AI Assistant!</h3>
-                        <p>Click the microphone button to start speaking, or type in the chat. First, enter your Gemini API key in the settings.</p>
+                        <p>1. Get free API key from Google AI Studio<br>
+                           2. Enter API key in settings<br>
+                           3. Click microphone to start speaking</p>
                     </div>
                     
                     <div class="message ai">
@@ -508,7 +510,7 @@
                             <i class="fas fa-robot"></i>
                         </div>
                         <div class="message-content">
-                            Hello! I'm your Gemini AI assistant. I can help you with questions, conversations, and much more. Please add your Gemini API key in the settings panel to get started.
+                            Hello! I'm your Gemini AI assistant. I can help with questions, conversations, coding, and much more. First, please add your Gemini API key in the settings.
                         </div>
                     </div>
                 </div>
@@ -527,7 +529,7 @@
                     </button>
                     
                     <div class="voice-status" id="voiceStatus">
-                        Click microphone to start speaking
+                        Add API key first, then click microphone
                     </div>
                     
                     <div style="display: flex; gap: 10px;">
@@ -536,6 +538,9 @@
                         </button>
                         <button class="btn" id="testBtn">
                             <i class="fas fa-play"></i> Test Voice
+                        </button>
+                        <button class="btn secondary" id="testApiBtn">
+                            <i class="fas fa-bolt"></i> Test API
                         </button>
                     </div>
                 </div>
@@ -564,20 +569,20 @@
                     </div>
                     
                     <div class="info-box">
-                        <strong>How to get API key:</strong><br>
-                        1. Go to <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a><br>
-                        2. Sign in with Google account<br>
-                        3. Click "Create API Key"<br>
-                        4. Copy and paste here
+                        <strong>Get FREE API Key:</strong><br>
+                        1. Go to <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a><br>
+                        2. Click "Create API Key"<br>
+                        3. Copy the key (starts with AIza...)<br>
+                        4. Paste above and click Save
                     </div>
                 </div>
                 
                 <div class="setting-group">
                     <label><i class="fas fa-brain"></i> AI Model</label>
                     <div class="model-selector">
-                        <button class="model-btn active" data-model="gemini-1.5-pro">Gemini Pro</button>
-                        <button class="model-btn" data-model="gemini-1.5-flash">Gemini Flash</button>
-                        <button class="model-btn" data-model="gemini-pro">Gemini 1.0</button>
+                        <button class="model-btn active" data-model="gemini-pro">Gemini Pro</button>
+                        <button class="model-btn" data-model="gemini-1.0-pro">Gemini 1.0 Pro</button>
+                        <button class="model-btn" data-model="gemini-1.5-pro-latest">Gemini 1.5 Pro</button>
                     </div>
                 </div>
                 
@@ -617,19 +622,23 @@
                 </div>
                 
                 <div class="info-box">
-                    <strong>Note:</strong> Your API key is stored locally in your browser and never sent to our servers. All conversations are processed directly with Google's Gemini API.
+                    <strong>Note:</strong> Your API key is stored locally in your browser only. All conversations go directly to Google's Gemini API. Free tier includes 60 requests per minute.
                 </div>
             </div>
         </div>
         
         <footer>
             <p>Gemini Live AI Assistant | Powered by Google Gemini API | Deployed on GitHub Pages</p>
-            <p>⚠️ This is a client-side application. Your API key is stored locally only.</p>
+            <p>⚠️ API Key is stored locally only. Never shared with any server.</p>
         </footer>
     </div>
 
     <script>
-        // Main Application
+        // Correct Gemini Models that WORK:
+        // gemini-pro (latest stable)
+        // gemini-1.0-pro
+        // gemini-1.5-pro-latest
+        
         class GeminiAIAssistant {
             constructor() {
                 this.initializeElements();
@@ -645,6 +654,7 @@
                 this.voiceBtn = document.getElementById('voiceBtn');
                 this.stopBtn = document.getElementById('stopBtn');
                 this.testBtn = document.getElementById('testBtn');
+                this.testApiBtn = document.getElementById('testApiBtn');
                 this.clearBtn = document.getElementById('clearBtn');
                 this.voiceStatus = document.getElementById('voiceStatus');
                 this.voiceVisualizer = document.getElementById('voiceVisualizer');
@@ -670,7 +680,7 @@
                 
                 // State
                 this.apiKey = null;
-                this.currentModel = 'gemini-1.5-pro';
+                this.currentModel = 'gemini-pro'; // Default working model
                 this.conversationHistory = [];
                 this.isProcessing = false;
             }
@@ -678,9 +688,10 @@
             initializeState() {
                 this.apiKey = localStorage.getItem('geminiApiKey') || null;
                 if (this.apiKey) {
-                    this.apiKeyInput.value = '•'.repeat(20); // Hide key
-                    this.connectionStatus.textContent = 'API Key Loaded';
+                    this.apiKeyInput.value = '•'.repeat(32);
+                    this.connectionStatus.textContent = 'API Key Loaded - Ready';
                     this.connectionStatus.style.color = '#34a853';
+                    this.testApiConnection();
                 }
             }
             
@@ -701,6 +712,8 @@
                 // Initialize Speech Synthesis
                 if (!this.speechSynthesis) {
                     console.warn('Speech Synthesis not supported');
+                    this.autoSpeak.disabled = true;
+                    this.testBtn.disabled = true;
                 }
             }
             
@@ -713,7 +726,7 @@
                 this.recognition.onstart = () => {
                     this.isListening = true;
                     this.voiceBtn.classList.add('listening');
-                    this.voiceStatus.textContent = 'Listening... Speak now';
+                    this.voiceStatus.textContent = '🎤 Listening... Speak now';
                     this.startVisualizer();
                 };
                 
@@ -731,6 +744,7 @@
                         this.showNotification('Please allow microphone access', 'error');
                     } else if (event.error === 'no-speech') {
                         this.voiceStatus.textContent = 'No speech detected';
+                        this.showNotification('No speech detected. Please try again.', 'warning');
                     }
                     
                     this.stopListening();
@@ -751,10 +765,14 @@
                     if (this.speechSynthesis.speaking) {
                         this.speechSynthesis.cancel();
                     }
+                    this.showNotification('Stopped', 'info');
                 });
                 
-                // Test button
+                // Test voice button
                 this.testBtn.addEventListener('click', () => this.testVoice());
+                
+                // Test API button
+                this.testApiBtn.addEventListener('click', () => this.testApiConnection());
                 
                 // Clear chat
                 this.clearBtn.addEventListener('click', () => this.clearChat());
@@ -777,6 +795,7 @@
                         btn.classList.add('active');
                         this.currentModel = btn.dataset.model;
                         this.showNotification(`Model changed to ${this.currentModel}`, 'success');
+                        this.saveSettings();
                     });
                 });
                 
@@ -793,6 +812,7 @@
                     this.saveSettings();
                 });
                 
+                this.voiceSelect.addEventListener('change', () => this.saveSettings());
                 this.autoSpeak.addEventListener('change', () => this.saveSettings());
                 this.saveHistory.addEventListener('change', () => this.saveSettings());
                 
@@ -813,7 +833,7 @@
             async processWithGemini(userMessage) {
                 if (!this.apiKey) {
                     this.showNotification('Please add your Gemini API key first', 'error');
-                    this.addMessage('I need a Gemini API key to respond. Please add your API key in the settings.', 'ai');
+                    this.addMessage('I need a Gemini API key to respond. Please add your API key in the settings panel.', 'ai');
                     return;
                 }
                 
@@ -827,7 +847,7 @@
                 
                 try {
                     // Prepare conversation history
-                    const messages = this.conversationHistory.map(msg => ({
+                    const messages = this.conversationHistory.slice(-10).map(msg => ({
                         role: msg.sender === 'user' ? 'user' : 'model',
                         parts: [{ text: msg.text }]
                     }));
@@ -836,6 +856,11 @@
                     messages.push({
                         role: 'user',
                         parts: [{ text: userMessage }]
+                    });
+                    
+                    console.log('Sending to Gemini API:', {
+                        model: this.currentModel,
+                        messageCount: messages.length
                     });
                     
                     // Call Gemini API
@@ -872,15 +897,31 @@
                 } catch (error) {
                     console.error('Gemini API error:', error);
                     this.removeTypingIndicator();
-                    this.addMessage(`Error: ${error.message}. Please check your API key and try again.`, 'ai');
-                    this.showNotification('API Error - Check your API key', 'error');
+                    
+                    let errorMessage = '';
+                    if (error.message.includes('API key')) {
+                        errorMessage = 'Invalid API key. Please check and update your API key.';
+                    } else if (error.message.includes('quota')) {
+                        errorMessage = 'API quota exceeded. Free tier allows 60 requests per minute.';
+                    } else if (error.message.includes('model')) {
+                        errorMessage = 'Model error. Please try a different model in settings.';
+                    } else {
+                        errorMessage = `Error: ${error.message}`;
+                    }
+                    
+                    this.addMessage(errorMessage, 'ai');
+                    this.showNotification('API Error - ' + errorMessage, 'error');
                 } finally {
                     this.isProcessing = false;
                 }
             }
             
             async callGeminiAPI(messages) {
+                // CORRECT API URL with working models
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
+                
+                console.log('API URL:', apiUrl);
+                console.log('Using model:', this.currentModel);
                 
                 const requestBody = {
                     contents: messages,
@@ -920,14 +961,17 @@
                 
                 if (!response.ok) {
                     const errorData = await response.json();
+                    console.error('API Error Response:', errorData);
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 
                 const data = await response.json();
+                console.log('API Success Response:', data);
                 
-                if (data.candidates && data.candidates[0]) {
+                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
                     return data.candidates[0].content.parts[0].text;
                 } else {
+                    console.error('No valid response:', data);
                     throw new Error('No response from AI');
                 }
             }
@@ -1009,11 +1053,16 @@
                     for (let voice of voices) {
                         if (voice.lang.startsWith(this.languageSelect.value.split('-')[0])) {
                             if (voiceType === 'female' && 
-                                voice.name.toLowerCase().includes('female')) {
+                                (voice.name.toLowerCase().includes('female') || 
+                                 voice.name.toLowerCase().includes('woman') ||
+                                 voice.name.toLowerCase().includes('samantha'))) {
                                 selectedVoice = voice;
                                 break;
                             } else if (voiceType === 'male' && 
-                                      voice.name.toLowerCase().includes('male')) {
+                                      (voice.name.toLowerCase().includes('male') || 
+                                       voice.name.toLowerCase().includes('man') ||
+                                       voice.name.toLowerCase().includes('alex') ||
+                                       voice.name.toLowerCase().includes('daniel'))) {
                                 selectedVoice = voice;
                                 break;
                             }
@@ -1024,7 +1073,7 @@
                 }
                 
                 utterance.onstart = () => {
-                    this.voiceStatus.textContent = 'Speaking...';
+                    this.voiceStatus.textContent = '🔊 Speaking...';
                 };
                 
                 utterance.onend = () => {
@@ -1039,6 +1088,11 @@
             toggleListening() {
                 if (!this.recognition) {
                     this.showNotification('Speech recognition not available', 'error');
+                    return;
+                }
+                
+                if (!this.apiKey) {
+                    this.showNotification('Please add your Gemini API key first', 'error');
                     return;
                 }
                 
@@ -1091,20 +1145,71 @@
             testVoice() {
                 const testText = "Hello! I am your Gemini AI assistant. How can I help you today?";
                 this.speakText(testText);
+                this.showNotification('Testing voice synthesis...', 'info');
+            }
+            
+            async testApiConnection() {
+                if (!this.apiKey) {
+                    this.showNotification('Please add your API key first', 'error');
+                    return;
+                }
+                
+                this.connectionStatus.textContent = 'Testing API connection...';
+                this.connectionStatus.style.color = '#fbbc04';
+                
+                try {
+                    // Simple test request
+                    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`;
+                    
+                    const response = await fetch(testUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                role: "user",
+                                parts: [{ text: "Hello" }]
+                            }],
+                            generationConfig: {
+                                maxOutputTokens: 10
+                            }
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        this.connectionStatus.textContent = '✅ API Connected Successfully';
+                        this.connectionStatus.style.color = '#34a853';
+                        this.showNotification('API connection successful!', 'success');
+                        
+                        // Add test response
+                        this.addMessage("API connection successful! I'm ready to help you.", 'ai');
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error?.message || 'API test failed');
+                    }
+                } catch (error) {
+                    console.error('API Test Error:', error);
+                    this.connectionStatus.textContent = '❌ API Connection Failed';
+                    this.connectionStatus.style.color = '#ea4335';
+                    this.showNotification('API test failed: ' + error.message, 'error');
+                }
             }
             
             clearChat() {
                 this.chatMessages.innerHTML = `
                     <div class="welcome-message">
                         <h3>Welcome to Gemini Live AI Assistant!</h3>
-                        <p>Click the microphone button to start speaking, or type in the chat.</p>
+                        <p>1. Get free API key from Google AI Studio<br>
+                           2. Enter API key in settings<br>
+                           3. Click microphone to start speaking</p>
                     </div>
                     <div class="message ai">
                         <div class="avatar">
                             <i class="fas fa-robot"></i>
                         </div>
                         <div class="message-content">
-                            Hello! I'm your Gemini AI assistant. How can I help you today?
+                            Hello! I'm your Gemini AI assistant. I can help with questions, conversations, coding, and much more. How can I assist you today?
                         </div>
                     </div>
                 `;
@@ -1128,46 +1233,22 @@
                 }
                 
                 if (!apiKey.startsWith('AIza')) {
-                    this.showNotification('Invalid API key format', 'error');
+                    this.showNotification('Invalid API key format. Should start with "AIza"', 'error');
                     return;
                 }
                 
                 this.apiKey = apiKey;
                 localStorage.setItem('geminiApiKey', apiKey);
                 this.apiKeyInput.type = 'password';
-                this.apiKeyInput.value = '•'.repeat(20);
+                this.apiKeyInput.value = '•'.repeat(32);
                 
-                this.connectionStatus.textContent = 'API Key Saved';
-                this.connectionStatus.style.color = '#34a853';
+                this.connectionStatus.textContent = 'API Key Saved - Testing...';
+                this.connectionStatus.style.color = '#fbbc04';
                 
                 this.showNotification('API key saved successfully', 'success');
                 
                 // Test the API key
-                this.testApiKey();
-            }
-            
-            async testApiKey() {
-                try {
-                    this.connectionStatus.textContent = 'Testing API connection...';
-                    
-                    const testMessage = "Hello";
-                    const messages = [{
-                        role: 'user',
-                        parts: [{ text: testMessage }]
-                    }];
-                    
-                    const response = await this.callGeminiAPI(messages);
-                    
-                    if (response) {
-                        this.connectionStatus.textContent = 'Connected to Gemini AI';
-                        this.connectionStatus.style.color = '#34a853';
-                        this.showNotification('API connection successful', 'success');
-                    }
-                } catch (error) {
-                    this.connectionStatus.textContent = 'API Connection Failed';
-                    this.connectionStatus.style.color = '#ea4335';
-                    this.showNotification('API test failed: ' + error.message, 'error');
-                }
+                setTimeout(() => this.testApiConnection(), 500);
             }
             
             saveSettings() {
@@ -1181,6 +1262,7 @@
                 };
                 
                 localStorage.setItem('geminiSettings', JSON.stringify(settings));
+                this.showNotification('Settings saved', 'success');
             }
             
             loadSettings() {
@@ -1194,7 +1276,7 @@
                     this.rateValue.textContent = this.speechRate.value + 'x';
                     this.autoSpeak.checked = settings.autoSpeak !== false;
                     this.saveHistory.checked = settings.saveHistory !== false;
-                    this.currentModel = settings.model || 'gemini-1.5-pro';
+                    this.currentModel = settings.model || 'gemini-pro';
                     
                     // Update model buttons
                     this.modelButtons.forEach(btn => {
@@ -1243,6 +1325,7 @@
                     animation: slideInRight 0.3s ease;
                     max-width: 300px;
                     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    font-size: 14px;
                 `;
                 
                 notification.textContent = message;
@@ -1260,25 +1343,34 @@
                 
                 // Add CSS animations
                 const style = document.createElement('style');
-                style.textContent = `
-                    @keyframes slideInRight {
-                        from { transform: translateX(100%); opacity: 0; }
-                        to { transform: translateX(0); opacity: 1; }
-                    }
-                    @keyframes slideOutRight {
-                        from { transform: translateX(0); opacity: 1; }
-                        to { transform: translateX(100%); opacity: 0; }
-                    }
-                `;
-                document.head.appendChild(style);
+                if (!document.getElementById('notification-styles')) {
+                    style.id = 'notification-styles';
+                    style.textContent = `
+                        @keyframes slideInRight {
+                            from { transform: translateX(100%); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                        @keyframes slideOutRight {
+                            from { transform: translateX(0); opacity: 1; }
+                            to { transform: translateX(100%); opacity: 0; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
             }
         }
         
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
             window.aiAssistant = new GeminiAIAssistant();
-            console.log('Gemini Live AI Assistant initialized');
+            console.log('✅ Gemini Live AI Assistant initialized');
+            console.log('🌐 HTTPS:', window.location.protocol === 'https:');
+            console.log('🎤 Speech Recognition:', !!window.aiAssistant.recognition);
+            console.log('🔊 Speech Synthesis:', !!window.aiAssistant.speechSynthesis);
         });
+    </script>
+</body>
+</html>        });
     </script>
 </body>
 </html>)
