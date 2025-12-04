@@ -580,9 +580,9 @@
                 <div class="setting-group">
                     <label><i class="fas fa-brain"></i> AI Model</label>
                     <div class="model-selector">
-                        <button class="model-btn active" data-model="gemini-pro">Gemini Pro</button>
+                        <button class="model-btn active" data-model="gemini-2.5-flash">Gemini 2.5 Flash</button>
+                        <button class="model-btn" data-model="gemini-2.5-pro">Gemini 2.5 Pro</button>
                         <button class="model-btn" data-model="gemini-1.0-pro">Gemini 1.0 Pro</button>
-                        <button class="model-btn" data-model="gemini-1.5-pro-latest">Gemini 1.5 Pro</button>
                     </div>
                 </div>
                 
@@ -634,11 +634,6 @@
     </div>
 
     <script>
-        // Correct Gemini Models that WORK:
-        // gemini-pro (latest stable)
-        // gemini-1.0-pro
-        // gemini-1.5-pro-latest
-        
         class GeminiAIAssistant {
             constructor() {
                 this.initializeElements();
@@ -680,7 +675,8 @@
                 
                 // State
                 this.apiKey = null;
-                this.currentModel = 'gemini-pro'; // Default working model
+                // **ફેરફાર અહીં કરવામાં આવ્યો છે (Change made here)**
+                this.currentModel = 'gemini-2.5-flash'; // Default working model: gemini-2.5-flash
                 this.conversationHistory = [];
                 this.isProcessing = false;
             }
@@ -917,7 +913,7 @@
             }
             
             async callGeminiAPI(messages) {
-                // CORRECT API URL with working models
+                // API URL હવે પસંદ કરેલ મોડેલનો ઉપયોગ કરશે
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
                 
                 console.log('API URL:', apiUrl);
@@ -1158,8 +1154,8 @@
                 this.connectionStatus.style.color = '#fbbc04';
                 
                 try {
-                    // Simple test request
-                    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`;
+                    // Simple test request using the default model
+                    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
                     
                     const response = await fetch(testUrl, {
                         method: 'POST',
@@ -1276,7 +1272,7 @@
                     this.rateValue.textContent = this.speechRate.value + 'x';
                     this.autoSpeak.checked = settings.autoSpeak !== false;
                     this.saveHistory.checked = settings.saveHistory !== false;
-                    this.currentModel = settings.model || 'gemini-pro';
+                    this.currentModel = settings.model || 'gemini-2.5-flash';
                     
                     // Update model buttons
                     this.modelButtons.forEach(btn => {
@@ -1370,7 +1366,4 @@
         });
     </script>
 </body>
-</html>        });
-    </script>
-</body>
-</html>)
+</html>
