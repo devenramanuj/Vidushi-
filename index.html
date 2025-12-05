@@ -135,11 +135,6 @@
             animation: mic-pulse 1.2s ease-in-out infinite;
         }
         
-        @keyframes mic-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-        }
-        
         .sound-waves { display: none; } 
         
         .voice-status {
@@ -148,6 +143,13 @@
             margin-top: 25px;
             min-height: 20px;
             font-weight: 400;
+            /* Added animation for thinking/speaking status */
+            animation: status-glow 1.5s infinite alternate;
+        }
+        
+        @keyframes status-glow {
+            from { opacity: 0.9; }
+            to { opacity: 0.6; }
         }
         
         .quick-actions {
@@ -472,7 +474,7 @@
                     </div>
                 </div>
                 <div class="info-box" style="margin-top: 10px;">
-                    ઝડપી જવાબો માટે 'Flash' મોડેલ પસંદ કરો.
+                    ઝડપી જવાબો માટે 'Flash' મોડેલ પસંદ કરો. (આ ડિફોલ્ટ સેટ છે.)
                 </div>
             </div>
             
@@ -622,7 +624,6 @@
                     this.voiceType = 'female';
                     this.speechRateValue = 1;
                     this.autoSpeakEnabled = true;
-                    // Default to faster model setting
                     this.currentModel = 'gemini-2.5-flash';
                 }
             }
@@ -722,7 +723,7 @@
             toggleListening() {
                 if (!this.recognition) return;
                 if (!this.apiKey) {
-                    this.showNotification('કૃપા કરીને પહેલા તમારી Gemini API કી ઉમેરો', 'error');
+                    this.showNotification('કૃપા કરીને પહેલા તમારી API કી ઉમેરો', 'error');
                     return;
                 }
                 if (this.isListening) {
@@ -794,11 +795,13 @@
                 
                 try {
                     const response = await this.callGeminiAPI(text);
+                    
                     if (response && this.autoSpeakEnabled) {
-                        if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' બોલી રહી છું...';
+                        // Display the response text immediately before speaking starts (streaming effect)
+                        if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' ' + response;
                         this.speakTextNatural(response);
                     } else if (response) {
-                        if (this.voiceStatus) this.voiceStatus.textContent = '✅ જવાબ મળ્યો';
+                        if (this.voiceStatus) this.voiceStatus.textContent = '✅ જવાબ મળ્યો: ' + response.substring(0, 30) + '...';
                     }
                 } catch (error) {
                     console.error('Gemini API error:', error);
@@ -807,6 +810,7 @@
                     this.showNotification('API ભૂલ આવી. સેટિંગ્સ તપાસો.', 'error');
                 } finally {
                     this.isProcessing = false;
+                    // Note: Status reset handled by speakTextNatural on end
                 }
             }
             
@@ -893,7 +897,7 @@
                     utterance.voice = selectedVoice;
                     
                     utterance.onstart = () => {
-                        if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' બોલી રહી છું...';
+                        // Status update is now part of processUserInput for streaming effect
                         this.updateMood('speaking');
                     };
                     
