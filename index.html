@@ -633,13 +633,10 @@
     </style>
 </head>
 <body>
-    <!-- Animated Background -->
     <div class="bg-animation" id="bgAnimation"></div>
     
-    <!-- Home Page -->
     <div id="homePage" class="page active">
         <div class="ai-container">
-            <!-- Static Attractive AI Logo -->
             <div class="ai-logo" id="aiLogo">
                 <div class="logo-glow"></div>
                 <div class="logo-core">
@@ -672,7 +669,6 @@
         </div>
     </div>
     
-    <!-- Settings Page -->
     <div id="settingsPage" class="page">
         <div class="settings-container">
             <div class="settings-header">
@@ -737,7 +733,7 @@
                     <option value="gu-IN">Gujarati (ગુજરાતી)</option>
                     <option value="hi-IN">Hindi (हिंदी)</option>
                     <option value="en-US">English</option>
-                    <option value="mr-IN">Marathi (मराठी)</option>
+                    <option value="mr-IN">Marathi (મરાઠી)</option>
                     <option value="ta-IN">Tamil (தமிழ்)</option>
                 </select>
             </div>
@@ -787,7 +783,6 @@
         </div>
     </div>
     
-    <!-- Navigation Buttons -->
     <button class="nav-btn" id="settingsBtn" title="Settings">
         <i class="fas fa-cog"></i>
     </button>
@@ -812,7 +807,9 @@
                     thinking: ['🤔', '💭', '🧠', '📚', '🔍'],
                     helpful: ['💡', '🌟', '✨', '🎯', '🎁'],
                     friendly: ['😊', '👋', '💖', '🌸', '🌺'],
-                    professional: ['📊', '📈', '🎯', '💼', '🏆']
+                    professional: ['📊', '📈', '🎯', '💼', '🏆'],
+                    // New emotional mood for speaking
+                    speaking: ['🗣️', '💬', '✨', '💖', '🔊'] 
                 };
             }
             
@@ -1073,16 +1070,18 @@
                 this.mood = newMood;
                 // Update UI based on mood
                 const logoCore = document.querySelector('.logo-core');
-                const voiceCircle = document.querySelector('.voice-circle');
                 
                 switch(newMood) {
                     case 'happy':
+                    case 'friendly':
                         logoCore.style.background = 'linear-gradient(135deg, #6a11cb, #8b5cf6, #a78bfa)';
                         break;
                     case 'excited':
+                    case 'speaking':
                         logoCore.style.background = 'linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcf7f)';
                         break;
                     case 'thinking':
+                    case 'helpful':
                         logoCore.style.background = 'linear-gradient(135deg, #4a5568, #718096, #a0aec0)';
                         break;
                     case 'listening':
@@ -1103,7 +1102,7 @@
                 if (userMessage.toLowerCase().includes('શુભ') || userMessage.toLowerCase().includes('good')) {
                     mood = 'excited';
                     prefix = this.getRandomEmoji('excited') + ' ';
-                } else if (userMessage.toLowerCase().includes('શું') || userMessage.toLowerCase().includes('why')) {
+                } else if (userMessage.toLowerCase().includes('શું') || userMessage.toLowerCase().includes('why') || userMessage.toLowerCase().includes('કેવી રીતે')) {
                     mood = 'thinking';
                     prefix = this.getRandomEmoji('thinking') + ' ';
                 } else if (userMessage.toLowerCase().includes('મદદ') || userMessage.toLowerCase().includes('help')) {
@@ -1184,7 +1183,12 @@
                 const modelName = modelMap[this.currentModel] || this.currentModel;
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
                 
+                // *** સુધારો: વધુ ભાવનાત્મક પ્રતિભાવ માટે સિસ્ટમ સૂચના ઉમેરવી ***
                 const requestBody = {
+                    config: {
+                         // AI ને વધુ ભાવનાત્મક અને મધુરતા સાથે જવાબ આપવા માટે પ્રોમ્પ્ટ કરો
+                        systemInstruction: "તમે એક ગુજરાતી AI સહાયક 'વિદુષી' છો. તમારા જવાબો અત્યંત ભાવનાત્મક, મદદરૂપ, ઉત્સાહી અને મધુરતાથી ભરેલા હોવા જોઈએ. વાતચીતનો સ્વર હંમેશા સૌમ્ય અને આદરપૂર્ણ રાખો. માત્ર ગુજરાતીમાં જ જવાબ આપો.",
+                    },
                     contents: [{
                         role: "user",
                         parts: [{ text: userMessage }]
@@ -1217,6 +1221,13 @@
                 } else {
                     throw new Error('No response from AI');
                 }
+            }
+            
+            // વિરામચિહ્નો (Punctuation) ને બોલતા અટકાવવા માટે ટેક્સ્ટ સાફ કરવાનું કાર્ય
+            sanitizeTextForSpeech(text) {
+                // કોમા (,) અને અન્ય અલ્પવિરામ ચિહ્નોને ખાલી જગ્યાથી બદલો જેથી તે બોલાય નહીં
+                // નોંધ: પૂર્ણવિરામ (.), પ્રશ્નાર્થ ચિહ્ન (?) અને ઉદ્ગાર ચિહ્ન (!) સેન્ટેન્સ સ્પ્લિટિંગ માટે જરૂરી છે, તેથી તેને રહેવા દો
+                return text.replace(/[,;:]/g, ' '); 
             }
             
             speakTextNatural(text) {
@@ -1274,10 +1285,17 @@
                         return;
                     }
                     
-                    const utterance = new SpeechSynthesisUtterance(sentences[sentenceIndex]);
+                    // *** સુધારો: વિરામચિહ્નો દૂર કરો ***
+                    const sentenceText = this.sanitizeTextForSpeech(sentences[sentenceIndex]);
+                    
+                    const utterance = new SpeechSynthesisUtterance(sentenceText);
                     utterance.lang = this.language;
-                    utterance.rate = parseFloat(this.speechRateValue) * 0.95;
-                    utterance.pitch = this.voiceType === 'female' ? 1.1 : 0.9;
+                    
+                    // *** સુધારો: અવાજની મધુરતા વધારવા માટે Pitch અને Rate માં ફેરફાર ***
+                    // Rate (ગતિ) થોડી ઘટાડીને વધુ સ્પષ્ટ અને મધુર કરો
+                    utterance.rate = parseFloat(this.speechRateValue) * 0.9; 
+                    // Female Pitch (પિચ) ને થોડી વધારીને વધુ 'સૌમ્ય' કરો
+                    utterance.pitch = this.voiceType === 'female' ? 1.15 : 0.9; 
                     utterance.volume = 1.0;
                     utterance.voice = selectedVoice;
                     
@@ -1287,12 +1305,13 @@
                     }
                     
                     utterance.onstart = () => {
-                        this.voiceStatus.textContent = '🔊 બોલી રહ્યો છું...';
+                        this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' બોલી રહ્યો છું...';
                         this.updateMood('speaking');
                     };
                     
                     utterance.onend = () => {
                         sentenceIndex++;
+                        // બે વાક્યો વચ્ચે નાનો નેચરલ પોઝ
                         setTimeout(() => {
                             speakNextSentence();
                         }, Math.random() * 400 + 300);
@@ -1305,7 +1324,7 @@
             }
             
             testVoice() {
-                const testText = "નમસ્તે! હું વિદુષી છું, તમારી AI સહાયક. મને તમારી સેવા મદદ કરવાનું ગમે છે. આજે હું તમને કેવી રીતે મદદ કરી શકું?";
+                const testText = "નમસ્તે! હું વિદુષી છું, તમારી સ્માર્ટ AI સહાયક! મને તમારી સેવા કરવાનું ગમે છે અને હું ખૂબ જ ઉત્સાહિત છું. આજે હું તમને કેવી રીતે મદદ કરી શકું? કૃપા કરીને જણાવો!";
                 this.updateMood('happy');
                 this.speakTextNatural(testText);
                 this.showNotification('Testing emotional voice...', 'info');
@@ -1321,7 +1340,7 @@
                 this.updateMood('thinking');
                 
                 try {
-                    const response = await this.callGeminiAPI("Say 'Hello' in Gujarati");
+                    const response = await this.callGeminiAPI("Say 'Hello' in Gujarati, using a friendly and enthusiastic tone, without mentioning the word 'hello'.");
                     
                     if (response) {
                         this.voiceStatus.textContent = '✅ API જોડાણ સફળ';
