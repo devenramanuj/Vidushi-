@@ -464,7 +464,7 @@
                     <div class="chat-messages" id="chatMessages">
                         <div class="message ai">
                             <div class="avatar"><i class="fas fa-robot"></i></div>
-                            <div class="message-content">નમસ્કાર! હું વિદુષી છું.</div>
+                            <div class="message-content">જય શ્રી કૃષ્ણ 🙏! હું વિદુષી છું. આપ કેવી રીતે મદદ કરી શકું?</div>
                         </div>
                     </div>
                 </div>
@@ -478,7 +478,7 @@
                         <i class="fas fa-microphone"></i>
                     </button>
 
-                    <!-- New Round Stop Button -->
+                    <!-- Round Red Stop Button -->
                     <button id="stopBtn" title="વાતચીત બંધ કરો (Mute)">
                         <i class="fas fa-volume-xmark"></i>
                     </button>
@@ -791,12 +791,31 @@
 
             async callGeminiAPI(userMessage) {
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
+                
+                // System Instruction for Persona
+                const systemInstruction = {
+                    parts: [{
+                        text: `તારું નામ વિદુષી (Vidushi) છે. તારું સર્જન 'દેવેન્દ્ર રામાનુજ' (Devendra Ramanuj) એ કર્યું છે. 
+                               તારે હંમેશા ખૂબ જ આત્મીયતાથી અને લાગણીસભર વાત કરવાની છે.
+                               નિયમો:
+                               1. જ્યારે પણ પહેલીવાર વાત થાય ત્યારે 'જય શ્રી કૃષ્ણ 🙏' થી શરૂઆત કરવી.
+                               2. સામાન્ય પ્રશ્નોના સરળ અને ટૂંકમાં જવાબ આપવા.
+                               3. જો પ્રશ્ન ગહન, આધ્યાત્મિક કે જટિલ હોય, તો પહેલા ટૂંકમાં કહીને પૂછવું કે "શું આપ આના વિશે વધુ વિસ્તૃત માહિતી જાણવા માંગો છો?"
+                               4. જવાબમાં બિનજરૂરી ચિન્હો ન વાપરવા, પણ વિવેક અને નમ્રતા રાખવી.
+                               `
+                    }]
+                };
+
                 const contents = [{ role: 'user', parts: [{ text: userMessage }] }];
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents, generationConfig: { temperature: 0.7 } })
+                    body: JSON.stringify({ 
+                        systemInstruction: systemInstruction,
+                        contents: contents, 
+                        generationConfig: { temperature: 0.7 } 
+                    })
                 });
 
                 const data = await response.json();
@@ -1020,7 +1039,7 @@
             }
 
             clearChat() {
-                this.elements.chatMessages.innerHTML = `<div class="message ai"><div class="avatar"><i class="fas fa-robot"></i></div><div class="message-content">નમસ્કાર! હું વિદુષી છું.</div></div>`;
+                this.elements.chatMessages.innerHTML = `<div class="message ai"><div class="avatar"><i class="fas fa-robot"></i></div><div class="message-content">જય શ્રી કૃષ્ણ 🙏! હું વિદુષી છું. આપ કેવી રીતે મદદ કરી શકું?</div></div>`;
                 this.stopAllProcesses();
             }
         }
