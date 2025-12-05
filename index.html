@@ -403,8 +403,8 @@
 </head>
 <body>
     <!-- 
-        CRITICAL FIX: Removed inline onclicks and relying solely on JS addEventListeners, 
-        which are now guaranteed to run after DOM is built.
+        Navigation buttons are now handled by addEventListeners in JS. 
+        Inline onclicks are removed.
     -->
     
     <!-- Navigation Buttons -->
@@ -550,6 +550,8 @@
                     error: ['❌', '😥']
                 };
                 this.initialGreetingDone = false;
+                // Trigger initial greeting when ready
+                this.initialGreeting();
             }
             
             initializeElements() {
@@ -665,7 +667,7 @@
             }
             
             setupEventListeners() {
-                // *** CRITICAL FIX: Ensure elements exist before adding listeners ***
+                // *** CRITICAL FIX: Attach navigation listeners directly here using safe checks ***
                 if (this.settingsBtn) this.settingsBtn.addEventListener('click', () => this.showSettingsPage());
                 if (this.backBtn) this.backBtn.addEventListener('click', () => this.showHomePage());
 
@@ -677,10 +679,12 @@
             
             setupSettingsListeners() {
                 if (this.toggleApiKeyBtn) this.toggleApiKeyBtn.addEventListener('click', () => {
-                    const type = this.apiKeyInput.type === 'password' ? 'text' : 'password';
-                    this.apiKeyInput.type = type;
-                    this.toggleApiKeyBtn.innerHTML = type === 'password' ? 
-                        '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+                    if (this.apiKeyInput) {
+                        const type = this.apiKeyInput.type === 'password' ? 'text' : 'password';
+                        this.apiKeyInput.type = type;
+                        this.toggleApiKeyBtn.innerHTML = type === 'password' ? 
+                            '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+                    }
                 });
                 
                 if (this.saveApiKeyBtn) this.saveApiKeyBtn.addEventListener('click', () => this.saveApiKey());
@@ -692,7 +696,7 @@
                     });
                 });
                 if (this.speechRate) this.speechRate.addEventListener('input', () => {
-                    this.rateValue.textContent = this.speechRate.value + 'x';
+                    if (this.rateValue) this.rateValue.textContent = this.speechRate.value + 'x';
                 });
                 if (this.saveSettingsBtn) this.saveSettingsBtn.addEventListener('click', () => this.saveAllSettings());
                 if (this.resetSettingsBtn) this.resetSettingsBtn.addEventListener('click', () => this.resetSettings());
@@ -820,7 +824,8 @@
                         }
                     ],
                     generationConfig: {
-                        temperature: 0.4, 
+                        // CRITICAL FIX: Lowering temperature for faster, less complex answers
+                        temperature: 0.1, 
                         maxOutputTokens: 256, 
                     }
                 };
@@ -871,7 +876,7 @@
                     const sentenceText = this.sanitizeTextForSpeech(sentences[sentenceIndex]);
                     if (!sentenceText.length) {
                         sentenceIndex++;
-                        setTimeout(() => { speakNextSentence(); }, 10); 
+                        setTimeout(() => { speakNextSentence(); }, 10); // small delay to prevent stack overflow
                         return;
                     }
 
