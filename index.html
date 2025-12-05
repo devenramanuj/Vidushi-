@@ -38,7 +38,7 @@
         
         .container {
             width: 100%;
-            max-width: 600px; /* Reduced max-width for focus on Chat */
+            max-width: 600px;
             background: var(--secondary-bg);
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
@@ -569,9 +569,14 @@
                 }
             }
 
+            // Simple Notification system (for developer use)
+            showNotification(message, type = 'info') {
+                console.log(`[Notification | ${type.toUpperCase()}]: ${message}`);
+            }
+
+
             // --- Speech Recognition (Input) Methods ---
             initializeSpeech() {
-                // Initialization logic remains mostly the same
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                     this.recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
                     this.recognition.continuous = false;
@@ -585,8 +590,6 @@
                     this.recognition.onend = () => this.stopListeningUI();
                 }
             }
-
-            // ... (Other Speech and API methods remain similar to the previous final version)
 
             // --- Gemini API Methods ---
             async processWithGemini(userMessage) {
@@ -647,7 +650,7 @@
                 }
             }
 
-            // --- Speech Synthesis (Output) Methods ---
+            // --- Speech Synthesis (Output) Methods (FIXED HERE) ---
             speakText(text) {
                 if (!this.speechSynthesis) return;
 
@@ -657,10 +660,15 @@
 
                 this.updateConnectionStatus('Speaking');
                 
-                const utterance = new SpeechSynthesisUtterance(text);
+                // FIX: TTS માટે વિરામચિહ્નો દૂર કરો
+                // (કોમા, પૂર્ણવિરામ, પ્રશ્નાર્થ, ઉદ્ગારવાચક, કોટેશન માર્ક્સ વગેરે દૂર કરી દો)
+                const cleanedText = text.replace(/[.,?!:;“”"«»]/g, ''); 
+                
+                const utterance = new SpeechSynthesisUtterance(cleanedText);
                 utterance.lang = this.elements.language.value;
                 utterance.rate = parseFloat(this.elements.speechRate.value);
                 
+                // Voice selection logic (remains same)
                 if (this.voices.length > 0) {
                     const voiceType = this.elements.voice.value;
                     const langCode = utterance.lang.split('-')[0];
@@ -686,14 +694,13 @@
                 };
                 utterance.onerror = (e) => {
                     console.error('Speech Synthesis Error:', e);
-                    this.showNotification('અવાજ સંશ્લેષણ (TTS) માં ભૂલ આવી.', 'error');
                 };
 
                 this.currentUtterance = utterance;
                 this.speechSynthesis.speak(utterance);
             }
             
-            // --- Event Handlers & Helpers ---
+            // --- Event Handlers & Helpers (Remaining methods are unchanged) ---
             setupEventListeners() {
                 this.elements.voiceBtn.addEventListener('click', () => this.toggleListening());
                 this.elements.stopBtn.addEventListener('click', () => this.stopAllProcesses());
@@ -725,6 +732,14 @@
                         this.currentModel = e.currentTarget.dataset.model;
                         this.saveSettings();
                     });
+                });
+                
+                document.getElementById('toggleApiKey').addEventListener('click', () => {
+                    const input = this.elements.apiKey;
+                    const type = input.type === 'password' ? 'text' : 'password';
+                    input.type = type;
+                    document.getElementById('toggleApiKey').innerHTML = type === 'password' ? 
+                        '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
                 });
             }
 
@@ -847,6 +862,13 @@
                     try { this.recognition.start(); } catch (e) { console.error('Recognition Start Error:', e); }
                 }
             }
+            
+            async testVoice() {
+                const testText = "જય શ્રી કૃષ્ણ હું વિદુષી આપનો AI આસિસ્ટન્ટ છું આ એક અવાજ પરીક્ષણ છે";
+                this.speakText(testText);
+                this.showNotification('Voice Test શરૂ...', 'info');
+            }
+
 
             async testApiConnection() {
                 // (Existing API test logic here)
@@ -866,7 +888,7 @@
                     if (response.ok) {
                         this.updateConnectionStatus('Connected');
                         this.showNotification('API connection સફળ!', 'success');
-                        const successMessage = "API connection સફળ! વિદુષી મદદ કરવા તૈયાર છે.";
+                        const successMessage = "API connection સફળ વિદુષી મદદ કરવા તૈયાર છે"; // Removed punctuation here too for TTS Test
                         this.addMessage(successMessage, 'ai');
                         if (this.elements.autoSpeak.checked) { this.speakText(successMessage); }
                     } else {
@@ -877,6 +899,18 @@
                     this.updateConnectionStatus('Failed', `❌ API Failed: ${error.message.substring(0, 30)}...`);
                     this.showNotification('API test નિષ્ફળ: ' + error.message, 'error');
                 }
+            }
+
+            clearChat() {
+                this.elements.chatMessages.innerHTML = `
+                    <div class="message ai">
+                        <div class="avatar"><i class="fas fa-robot"></i></div>
+                        <div class="message-content">નમસ્કાર! હું વિદુષી છું. કૃપા કરીને સેટિંગ્સમાં API Key દાખલ કરો.</div>
+                    </div>
+                `;
+                this.conversationHistory = [];
+                this.stopAllProcesses();
+                this.showNotification('Chat Clear થઈ ગયો', 'success');
             }
         }
         
