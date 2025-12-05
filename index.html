@@ -441,7 +441,7 @@
                         <div class="model-icon">
                             <i class="fas fa-bolt"></i>
                         </div>
-                        <div class="model-name">ઝડપી (ડિફોલ્ટ)</div>
+                        <div class="model-name">ઝડપી</div>
                     </div>
                     <div class="model-card" data-model="gemini-1.5-pro">
                         <div class="model-icon">
@@ -451,7 +451,7 @@
                     </div>
                 </div>
                 <div class="info-box" style="margin-top: 10px;">
-                    <strong>મહત્વપૂર્ણ:</strong> Gemini 2.5 મોડેલ હજુ v1beta API માં ઉપલબ્ધ નથી. માત્ર 1.5 મોડેલ કામ કરે છે. જ્યારે 2.5 મોડેલ ઉપલબ્ધ થાય ત્યારે આપોઆપ અપડેટ થઈ જશે.
+                    <strong>મુખ્ય માહિતી:</strong> વર્તમાનમાં Google Gemini API માત્ર 1.5 મોડેલ જ સપોર્ટ કરે છે. 2.5 મોડેલ હજુ v1beta API માં ઉપલબ્ધ નથી.
                 </div>
             </div>
             
@@ -820,7 +820,7 @@
                     throw new Error("API Key not set.");
                 }
 
-                // Use only Gemini 1.5 models as 2.5 is not available in v1beta
+                // Use Gemini 1.5 model
                 const modelName = this.currentModel || 'gemini-1.5-flash';
                 console.log('Model name:', modelName);
                 console.log('API key (first 10 chars):', this.apiKey.substring(0, 10) + '...');
