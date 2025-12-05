@@ -403,8 +403,7 @@
 </head>
 <body>
     <!-- 
-        Navigation buttons are now handled by addEventListeners in JS. 
-        Inline onclicks are removed.
+        Navigation buttons are handled by addEventListeners in JS.
     -->
     
     <!-- Navigation Buttons -->
@@ -463,14 +462,17 @@
                         <div class="model-icon">
                             <i class="fas fa-star"></i>
                         </div>
-                        <div class="model-name">Gemini 2.5</div>
+                        <div class="model-name">Flash (ઝડપી)</div>
                     </div>
-                    <div class="model-card" data-model="gemini-1.5-flash">
+                    <div class="model-card" data-model="gemini-1.5-pro">
                         <div class="model-icon">
                             <i class="fas fa-rocket"></i>
                         </div>
-                        <div class="model-name">Gemini 1.5</div>
+                        <div class="model-name">Pro (ગુણવત્તા)</div>
                     </div>
+                </div>
+                <div class="info-box" style="margin-top: 10px;">
+                    ઝડપી જવાબો માટે 'Flash' મોડેલ પસંદ કરો.
                 </div>
             </div>
             
@@ -620,6 +622,7 @@
                     this.voiceType = 'female';
                     this.speechRateValue = 1;
                     this.autoSpeakEnabled = true;
+                    // Default to faster model setting
                     this.currentModel = 'gemini-2.5-flash';
                 }
             }
@@ -810,6 +813,7 @@
             async callGeminiAPI(userMessage) {
                 if (!this.apiKey) throw new Error("API Key not set.");
 
+                // Use the selected model from settings
                 const modelName = this.currentModel || 'gemini-2.5-flash';
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
                 
@@ -824,9 +828,10 @@
                         }
                     ],
                     generationConfig: {
-                        // CRITICAL FIX: Lowering temperature for faster, less complex answers
+                        // CRITICAL FIX: Lowering temperature for stable, fast response
                         temperature: 0.1, 
-                        maxOutputTokens: 256, 
+                        // CRITICAL FIX: Further reducing tokens for rapid, concise answers
+                        maxOutputTokens: 150, 
                     }
                 };
                 
@@ -876,7 +881,7 @@
                     const sentenceText = this.sanitizeTextForSpeech(sentences[sentenceIndex]);
                     if (!sentenceText.length) {
                         sentenceIndex++;
-                        setTimeout(() => { speakNextSentence(); }, 10); // small delay to prevent stack overflow
+                        setTimeout(() => { speakNextSentence(); }, 10); 
                         return;
                     }
 
@@ -1044,14 +1049,6 @@
             window.vidushiAI = vidushi; // Expose globally
 
             // Initial greeting trigger
-            if (!vidushi.initialGreetingDone) {
-                 vidushi.initialGreeting();
-            }
-        });
-    </script>
-</body>
-</html>
-
             if (!vidushi.initialGreetingDone) {
                  vidushi.initialGreeting();
             }
