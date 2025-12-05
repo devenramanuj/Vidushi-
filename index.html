@@ -17,6 +17,7 @@
             --button-color: #444444;
             --status-green: #00ff00;
             --status-red: #ff0000;
+            --status-blue: #00ffff;
         }
         
         * {
@@ -186,28 +187,50 @@
         }
         
         .voice-btn {
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             background: var(--button-color);
             border: none;
             color: var(--text-color);
-            font-size: 20px;
+            font-size: 24px;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
         
         .voice-btn:hover {
             background: #555;
+            transform: scale(1.05);
         }
 
         .voice-btn.listening {
             background: var(--status-red);
             box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.5);
             animation: pulse-ring 1.5s infinite;
+        }
+        
+        /* Continuous Mode Indicator on Button */
+        .voice-btn.continuous-active::after {
+            content: '\f021'; /* FontAwesome Sync Icon */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--status-blue);
+            color: black;
+            font-size: 10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--secondary-bg);
         }
         
         @keyframes pulse-ring {
@@ -219,6 +242,8 @@
         .voice-status {
             font-size: 14px;
             color: #aaa;
+            min-height: 20px;
+            text-align: center;
         }
 
         /* Status Bar */
@@ -343,6 +368,34 @@
             gap: 10px;
             margin-bottom: 10px;
         }
+        
+        /* Highlight toggle for Continuous Mode */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--status-green); }
+        input:checked + .slider:before { transform: translateX(26px); }
     </style>
 </head>
 <body>
@@ -365,7 +418,6 @@
                             <span id="connectionStatus">Key જરૂરી છે</span>
                         </div>
                         <div class="action-buttons">
-                            <button id="testBtn" title="અવાજ પરીક્ષણ"><i class="fas fa-play"></i> Voice Test</button>
                             <button id="clearBtn" title="Chat Clear કરો"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
@@ -373,7 +425,7 @@
                     <div class="chat-messages" id="chatMessages">
                         <div class="message ai">
                             <div class="avatar"><i class="fas fa-robot"></i></div>
-                            <div class="message-content">નમસ્કાર! હું વિદુષી છું. કૃપા કરીને સેટિંગ્સમાં API Key દાખલ કરો.</div>
+                            <div class="message-content">નમસ્કાર! હું વિદુષી છું. સેટિંગ્સમાં "સતત વાતચીત" ચાલુ કરીને સીધી વાત કરી શકો છો.</div>
                         </div>
                     </div>
                 </div>
@@ -387,16 +439,13 @@
                         <i class="fas fa-microphone"></i>
                     </button>
 
-                    <button class="action-buttons" id="stopBtn" style="margin-top: 10px;">
-                        <i class="fas fa-stop"></i> અવાજ/પ્રક્રિયા બંધ કરો
+                    <button class="action-buttons" id="stopBtn" style="margin-top: 15px; width: auto; background: #8b0000;">
+                        <i class="fas fa-stop"></i> વાતચીત બંધ કરો (Stop)
                     </button>
                     
-                    <div class="voice-visualizer" id="voiceVisualizer">
-                        <div class="visualizer-bar"></div>
-                        <div class="visualizer-bar"></div>
-                        <div class="visualizer-bar"></div>
-                        <div class="visualizer-bar"></div>
-                        <div class="visualizer-bar"></div>
+                    <div class="voice-visualizer" id="voiceVisualizer" style="height: 5px; margin-top: 10px; opacity: 0;">
+                        <!-- Simple visual filler -->
+                        <div style="width: 100%; height: 2px; background: #444; border-radius: 2px;"></div>
                     </div>
                 </div>
             </div>
@@ -413,8 +462,22 @@
                         <input type="password" id="apiKey" placeholder="તમારી Gemini API key દાખલ કરો">
                         <button type="button" id="toggleApiKey" style="width: 40px; flex-shrink: 0; padding: 0;"><i class="fas fa-eye"></i></button>
                     </div>
-                    <button id="saveApiKey" style="margin-top: 10px;"><i class="fas fa-save"></i> Key સેવ કરો અને Test કરો</button>
-                    <button id="testApiBtn" style="margin-top: 10px; background: #333;"><i class="fas fa-bolt"></i> માત્ર API Test</button>
+                    <button id="saveApiKey" style="margin-top: 10px;"><i class="fas fa-save"></i> Key સેવ કરો</button>
+                    <button id="testApiBtn" style="margin-top: 10px; background: #333;"><i class="fas fa-bolt"></i> API Test</button>
+                </div>
+
+                <!-- Continuous Mode Toggle -->
+                <div class="setting-group" style="border: 1px solid #555; padding: 15px; border-radius: 8px; background: #252525;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="continuousMode" style="margin: 0; color: #fff; font-weight: bold;">
+                            <i class="fas fa-comments"></i> સતત વાતચીત (Continuous Mode)
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="continuousMode">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p style="font-size: 12px; color: #aaa; margin-top: 5px;">ચાલુ રાખવાથી બોટ જવાબ આપ્યા પછી આપોઆપ સાંભળશે.</p>
                 </div>
                 
                 <div class="setting-group">
@@ -431,7 +494,6 @@
                         <option value="gu-IN">Gujarati</option>
                         <option value="en-US">English (US)</option>
                         <option value="hi-IN">Hindi</option>
-                        <option value="mr-IN">Marathi</option>
                     </select>
                 </div>
                 
@@ -452,10 +514,6 @@
                     <input type="checkbox" id="autoSpeak" checked>
                     <label for="autoSpeak">જવાબ આપોઆપ બોલો</label>
                 </div>
-
-                <div class="info-box" style="margin-top: 20px; background: #222; border-color: #555;">
-                    <p>API Key Local Storage માં સેવ થાય છે. Google AI Studio પરથી Key મેળવો.</p>
-                </div>
             </div>
         </div>
     </div>
@@ -463,7 +521,7 @@
     <script>
         class GeminiAIAssistant {
             constructor() {
-                // DOM Elements (Simplified access via map)
+                // DOM Elements
                 this.elements = Object.fromEntries(
                     Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el])
                 );
@@ -471,13 +529,13 @@
                 // State
                 this.apiKey = localStorage.getItem('geminiApiKey');
                 this.currentModel = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
-                this.conversationHistory = [];
                 this.isProcessing = false;
                 this.isListening = false;
                 this.recognition = null;
                 this.speechSynthesis = window.speechSynthesis;
                 this.currentUtterance = null;
                 this.voices = [];
+                this.shouldContinueListening = false; // Flag for continuous mode loop
 
                 this.initialize();
             }
@@ -486,22 +544,20 @@
                 this.loadSettings();
                 this.setupEventListeners();
                 this.initializeSpeech();
-                // Check if voices are immediately available, otherwise wait
-                if (this.speechSynthesis.onvoiceschanged) {
-                    this.speechSynthesis.onvoiceschanged = () => {
-                        this.voices = this.speechSynthesis.getVoices();
-                        console.log(`TTS Voices loaded: ${this.voices.length}`);
-                    };
-                } else {
-                    // Fallback for browsers that don't fire onvoiceschanged immediately
-                    setTimeout(() => {
-                        this.voices = this.speechSynthesis.getVoices();
-                        if (this.voices.length > 0) {
-                            console.log(`TTS Voices loaded via fallback: ${this.voices.length}`);
-                        }
-                    }, 500);
+                
+                // Voice Loading
+                const loadVoices = () => {
+                    this.voices = this.speechSynthesis.getVoices();
+                    console.log(`TTS Voices loaded: ${this.voices.length}`);
+                };
+                
+                if (this.speechSynthesis.onvoiceschanged !== undefined) {
+                    this.speechSynthesis.onvoiceschanged = loadVoices;
                 }
+                setTimeout(loadVoices, 500); // Fallback
+
                 this.updateConnectionStatus(this.apiKey ? 'Ready' : 'Not Ready');
+                this.updateContinuousModeUI();
             }
             
             // --- UI & State Methods ---
@@ -511,12 +567,14 @@
                 this.elements.rateValue.textContent = `${this.elements.speechRate.value}x`;
                 this.elements.voice.value = localStorage.getItem('geminiVoiceType') || 'female';
                 this.elements.autoSpeak.checked = localStorage.getItem('geminiAutoSpeak') === 'false' ? false : true;
+                
+                // Load Continuous Mode Setting
+                this.elements.continuousMode.checked = localStorage.getItem('geminiContinuousMode') === 'true';
 
                 if (this.apiKey) {
                     this.elements.apiKey.value = '•'.repeat(32);
                 }
                 
-                // Update model button
                 document.querySelectorAll('.model-btn').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.model === this.currentModel);
                 });
@@ -529,8 +587,19 @@
                 localStorage.setItem('geminiSpeechRate', this.elements.speechRate.value);
                 localStorage.setItem('geminiVoiceType', this.elements.voice.value);
                 localStorage.setItem('geminiAutoSpeak', this.elements.autoSpeak.checked);
+                localStorage.setItem('geminiContinuousMode', this.elements.continuousMode.checked);
+                
+                this.updateContinuousModeUI();
             }
             
+            updateContinuousModeUI() {
+                if (this.elements.continuousMode.checked) {
+                    this.elements.voiceBtn.classList.add('continuous-active');
+                } else {
+                    this.elements.voiceBtn.classList.remove('continuous-active');
+                }
+            }
+
             togglePage(pageId) {
                 const chatPage = this.elements.chatPage;
                 const settingsPage = this.elements.settingsPage;
@@ -551,9 +620,9 @@
                     'Testing': { text: 'API Testing...', color: '#ffd700' },
                     'Connected': { text: '✅ API Connected', color: 'var(--status-green)' },
                     'Failed': { text: '❌ API ભૂલ', color: 'var(--status-red)' },
-                    'Listening': { text: '🎤 સાંભળી રહી છે...', color: '#00ffff' },
+                    'Listening': { text: '🎤 સાંભળી રહી છે...', color: 'var(--status-blue)' },
                     'Speaking': { text: '🔊 બોલી રહી છે...', color: 'var(--status-green)' },
-                    'Processing': { text: '🧠 પ્રોસેસિંગ...', color: '#ffd700' },
+                    'Processing': { text: '🧠 વિચાર કરી રહી છે...', color: '#ffd700' },
                 };
                 
                 const currentStatus = statusMap[status] || statusMap['Not Ready'];
@@ -569,17 +638,16 @@
                 }
             }
 
-            // Simple Notification system (for developer use)
             showNotification(message, type = 'info') {
-                console.log(`[Notification | ${type.toUpperCase()}]: ${message}`);
+                console.log(`[${type}]: ${message}`);
             }
 
 
-            // --- Speech Recognition (Input) Methods ---
+            // --- Speech Recognition (Input) ---
             initializeSpeech() {
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                     this.recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
-                    this.recognition.continuous = false;
+                    this.recognition.continuous = false; // We handle loop manually
                     this.recognition.interimResults = false;
                     this.recognition.maxAlternatives = 1;
                     this.recognition.lang = this.elements.language.value;
@@ -587,11 +655,14 @@
                     this.recognition.onstart = () => this.startListeningUI();
                     this.recognition.onresult = (event) => this.handleRecognitionResult(event);
                     this.recognition.onerror = (event) => this.handleRecognitionError(event);
-                    this.recognition.onend = () => this.stopListeningUI();
+                    this.recognition.onend = () => {
+                        this.stopListeningUI();
+                        // Note: Restart logic is handled in SpeakText onend, not here, to avoid conflict
+                    };
                 }
             }
 
-            // --- Gemini API Methods ---
+            // --- Gemini API ---
             async processWithGemini(userMessage) {
                 if (!this.apiKey) return;
                 if (this.isProcessing) return;
@@ -610,25 +681,28 @@
                         
                         if (this.elements.autoSpeak.checked) {
                             this.speakText(responseText);
+                        } else {
+                            // If auto-speak is off, but continuous mode is on, we should just listen again
+                            this.isProcessing = false;
+                            if (this.elements.continuousMode.checked && this.shouldContinueListening) {
+                                setTimeout(() => this.toggleListening(true), 1000);
+                            } else {
+                                this.updateConnectionStatus('Ready');
+                            }
                         }
                     }
                 } catch (error) {
                     console.error('Gemini Processing Error:', error);
                     this.removeTypingIndicator();
-                    this.addMessage(`Error: API માં ભૂલ આવી. Console જુઓ.`, 'ai');
+                    this.addMessage(`Error: API માં ભૂલ આવી.`, 'ai');
                     this.updateConnectionStatus('Failed');
-                } finally {
                     this.isProcessing = false;
-                    if (!this.speechSynthesis.speaking) {
-                         this.updateConnectionStatus('Ready');
-                    }
+                    this.shouldContinueListening = false; // Stop loop on error
                 }
             }
 
             async callGeminiAPI(userMessage) {
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
-                
-                // For a simple chat bot, we don't send full history every time, just the last message
                 const contents = [{ role: 'user', parts: [{ text: userMessage }] }];
 
                 const response = await fetch(apiUrl, {
@@ -642,88 +716,81 @@
                 if (!response.ok || data.error) {
                     throw new Error(data.error?.message || 'API request failed');
                 }
-
-                if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-                    return data.candidates[0].content.parts[0].text;
-                } else {
-                    return 'માફ કરશો, હું જવાબ આપી શકી નથી.';
-                }
+                
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
             }
 
-            // --- Speech Synthesis (Output) Methods (UPDATED with Symbol Cleaning) ---
+            // --- Speech Synthesis (Output) ---
             speakText(text) {
                 if (!this.speechSynthesis) return;
-
-                if (this.currentUtterance) {
-                    this.speechSynthesis.cancel();
-                }
+                if (this.currentUtterance) this.speechSynthesis.cancel();
 
                 this.updateConnectionStatus('Speaking');
                 
-                // --- સુધારો: ચિન્હો સાફ કરવાનું લોજિક ---
-                let cleanText = text;
-
-                // 1. માર્કડાઉન ચિન્હો (*, #, _, `) અને કૌંસ [] () દૂર કરો
-                // આનાથી "Star", "Hash", "Dash" એવું બોલવાનું બંધ થશે.
-                cleanText = cleanText.replace(/[*#_`~>\[\]()]/g, ""); 
-
-                // 2. લિંક (http...) હોય તો તે ન વંચાય તે માટે 'Link' શબ્દ મૂકવો
+                // Clean text logic
+                let cleanText = text.replace(/[*#_`~>\[\]()]/g, ""); 
                 cleanText = cleanText.replace(/https?:\/\/\S+/g, " લિંક ");
-
-                // 3. ડબલ સ્પેસ દૂર કરો
                 cleanText = cleanText.replace(/\s+/g, " ").trim();
-                
-                // નોંધ: અલ્પવિરામ (,) અને પૂર્ણવિરામ (.) રાખ્યા છે જેથી બોટ અટકીને બોલે.
-                // ---------------------------
 
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = this.elements.language.value;
                 utterance.rate = parseFloat(this.elements.speechRate.value);
                 
-                // Voice selection logic
                 if (this.voices.length > 0) {
                     const voiceType = this.elements.voice.value;
                     const langCode = utterance.lang.split('-')[0];
-                    let selectedVoice = this.voices.find(v => v.default) || this.voices.find(v => v.lang.startsWith(langCode)) || this.voices[0];
-
-                    for (const voice of this.voices) {
-                        if (voice.lang.startsWith(langCode)) {
-                            const isFemale = voice.name.toLowerCase().includes('female') || voice.name.toLowerCase().includes('woman');
-                            const isMale = voice.name.toLowerCase().includes('male') || voice.name.toLowerCase().includes('man');
-
-                            if (voiceType === 'female' && isFemale) { selectedVoice = voice; break; } 
-                            if (voiceType === 'male' && isMale) { selectedVoice = voice; break; }
-                        }
-                    }
+                    let selectedVoice = this.voices.find(v => v.lang.startsWith(langCode) && v.name.toLowerCase().includes(voiceType)) || 
+                                        this.voices.find(v => v.lang.startsWith(langCode)) || this.voices[0];
                     utterance.voice = selectedVoice;
                 }
                 
+                // --- CONTINUOUS MODE LOGIC HERE ---
                 utterance.onend = () => {
                     this.currentUtterance = null;
-                    if (!this.isListening && !this.isProcessing) {
-                         this.updateConnectionStatus('Ready');
+                    this.isProcessing = false;
+
+                    // If user hit STOP, shouldContinueListening will be false
+                    if (this.elements.continuousMode.checked && this.shouldContinueListening) {
+                        // Small delay to ensure mic doesn't catch end of bot speech
+                        this.updateConnectionStatus('Ready', 'ફરી સાંભળું છું...');
+                        setTimeout(() => {
+                            if (this.shouldContinueListening) { // Double check
+                                this.toggleListening(true);
+                            }
+                        }, 500);
+                    } else {
+                        this.updateConnectionStatus('Ready');
+                        this.shouldContinueListening = false; // Reset
                     }
                 };
+
                 utterance.onerror = (e) => {
-                    console.error('Speech Synthesis Error:', e);
+                    console.error('Speech Error:', e);
+                    this.isProcessing = false;
                 };
 
                 this.currentUtterance = utterance;
                 this.speechSynthesis.speak(utterance);
             }
             
-            // --- Event Handlers & Helpers ---
+            // --- Event Handlers ---
             setupEventListeners() {
-                this.elements.voiceBtn.addEventListener('click', () => this.toggleListening());
+                // Main Mic Button
+                this.elements.voiceBtn.addEventListener('click', () => {
+                    if (this.isListening) {
+                        this.stopAllProcesses(); // Click while listening = Stop
+                    } else {
+                        this.shouldContinueListening = true; // Enable loop
+                        this.toggleListening(true);
+                    }
+                });
+
                 this.elements.stopBtn.addEventListener('click', () => this.stopAllProcesses());
-                this.elements.testBtn.addEventListener('click', () => this.testVoice());
                 this.elements.clearBtn.addEventListener('click', () => this.clearChat());
                 
-                // Toggle Pages
                 this.elements.toggleSettingsBtn.addEventListener('click', () => this.togglePage('settings'));
                 this.elements.backToChatBtn.addEventListener('click', () => this.togglePage('chat'));
 
-                // Settings Actions
                 this.elements.saveApiKey.addEventListener('click', () => this.handleApiKeySave());
                 this.elements.testApiBtn.addEventListener('click', () => this.testApiConnection());
                 
@@ -732,8 +799,7 @@
                     this.saveSettings();
                 });
                 
-                // Simplified setting change listeners
-                ['language', 'voice', 'autoSpeak'].forEach(id => {
+                ['language', 'voice', 'autoSpeak', 'continuousMode'].forEach(id => {
                     this.elements[id].addEventListener('change', () => this.saveSettings());
                 });
 
@@ -748,65 +814,65 @@
                 
                 document.getElementById('toggleApiKey').addEventListener('click', () => {
                     const input = this.elements.apiKey;
-                    const type = input.type === 'password' ? 'text' : 'password';
-                    input.type = type;
-                    document.getElementById('toggleApiKey').innerHTML = type === 'password' ? 
-                        '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+                    input.type = input.type === 'password' ? 'text' : 'password';
                 });
             }
 
             handleRecognitionResult(event) {
                 const transcript = event.results[0][0].transcript;
                 this.addMessage(transcript, 'user');
+                // Don't stop loop here, processWithGemini will handle next steps
                 this.processWithGemini(transcript);
             }
             
             handleRecognitionError(event) {
-                console.error('Speech recognition error:', event.error);
-                if (event.error === 'not-allowed') {
-                    this.showNotification('માઇક્રોફોન પરવાનગી (Permission) જરૂરી છે', 'error');
-                } else if (event.error === 'no-speech') {
+                console.error('Recognition error:', event.error);
+                if (event.error === 'no-speech') {
+                    // In continuous mode, if no speech, maybe try again or stop?
+                    // Usually better to stop to avoid infinite loop of "listening..."
                     this.showNotification('કોઈ અવાજ મળ્યો નથી', 'warning');
                 }
                 this.stopListeningUI();
+                
+                if(event.error === 'no-speech' && this.elements.continuousMode.checked && this.shouldContinueListening) {
+                     // Optional: Retry once more if in continuous mode? 
+                     // For now, let's stop to prevent annoyance.
+                     this.shouldContinueListening = false;
+                     this.updateConnectionStatus('Ready', 'કોઈ અવાજ નહીં - મોડ બંધ');
+                }
             }
 
             handleApiKeySave() {
                 const apiKey = this.elements.apiKey.value.trim();
-                
                 if (!apiKey || !apiKey.startsWith('AIza')) {
-                    this.showNotification('API Key અયોગ્ય છે.', 'error');
-                    return;
+                    this.showNotification('API Key અયોગ્ય છે.', 'error'); return;
                 }
-                
                 this.apiKey = apiKey;
                 this.elements.apiKey.type = 'password';
                 this.elements.apiKey.value = '•'.repeat(32);
                 this.saveSettings();
                 this.showNotification('API key સેવ થઈ ગઈ', 'success');
-                this.testApiConnection();
             }
 
             stopAllProcesses() {
+                this.shouldContinueListening = false; // KILL THE LOOP
                 if (this.speechSynthesis.speaking) this.speechSynthesis.cancel();
-                if (this.recognition) this.recognition.abort();
+                if (this.recognition) this.recognition.stop();
                 this.removeTypingIndicator();
                 this.stopListeningUI();
-                this.updateConnectionStatus(this.apiKey ? 'Ready' : 'Not Ready');
+                this.isProcessing = false;
+                this.updateConnectionStatus('Ready', 'વાતચીત બંધ કરી');
             }
 
             addMessage(text, sender) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
-                
                 const avatarDiv = document.createElement('div');
                 avatarDiv.className = 'avatar';
                 avatarDiv.innerHTML = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
-                
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'message-content';
                 contentDiv.textContent = text;
-                
                 messageDiv.appendChild(avatarDiv);
                 messageDiv.appendChild(contentDiv);
                 this.elements.chatMessages.appendChild(messageDiv);
@@ -818,21 +884,7 @@
                 const typingDiv = document.createElement('div');
                 typingDiv.className = 'message ai';
                 typingDiv.id = 'typingIndicator';
-                
-                const avatarDiv = document.createElement('div');
-                avatarDiv.className = 'avatar';
-                avatarDiv.innerHTML = '<i class="fas fa-robot"></i>';
-                
-                const typingContent = document.createElement('div');
-                typingContent.className = 'message-content';
-                typingContent.innerHTML = `
-                    <span class="typing-indicator-dot"></span>
-                    <span class="typing-indicator-dot"></span>
-                    <span class="typing-indicator-dot"></span>
-                `;
-                
-                typingDiv.appendChild(avatarDiv);
-                typingDiv.appendChild(typingContent);
+                typingDiv.innerHTML = `<div class="avatar"><i class="fas fa-robot"></i></div><div class="message-content"><span class="typing-indicator-dot"></span><span class="typing-indicator-dot"></span><span class="typing-indicator-dot"></span></div>`;
                 this.elements.chatMessages.appendChild(typingDiv);
                 this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
             }
@@ -846,89 +898,57 @@
                 this.isListening = true;
                 this.elements.voiceBtn.classList.add('listening');
                 this.updateConnectionStatus('Listening');
-                this.elements.voiceVisualizer.style.opacity = 1;
-                this.elements.voiceVisualizer.querySelectorAll('.visualizer-bar').forEach(bar => bar.style.animationPlayState = 'running');
             }
 
             stopListeningUI() {
                 this.isListening = false;
                 this.elements.voiceBtn.classList.remove('listening');
-                if (!this.isProcessing && !this.speechSynthesis.speaking) {
-                    this.updateConnectionStatus('Ready');
-                }
-                this.elements.voiceVisualizer.style.opacity = 0;
-                this.elements.voiceVisualizer.querySelectorAll('.visualizer-bar').forEach(bar => bar.style.animationPlayState = 'paused');
             }
 
-            toggleListening() {
-                if (!this.apiKey) {
-                    this.showNotification('API Key જરૂરી છે', 'error');
-                    return;
-                }
+            toggleListening(forceStart = false) {
+                if (!this.apiKey) { this.showNotification('API Key જરૂરી છે', 'error'); return; }
                 if (!this.recognition) return;
                 
+                // If forcing start (from auto-loop), ignore current state check
+                if (forceStart) {
+                    this.recognition.lang = this.elements.language.value;
+                    try { this.recognition.start(); } catch (e) { console.log('Already started'); }
+                    return;
+                }
+
                 if (this.isListening) {
                     this.recognition.stop();
+                    this.shouldContinueListening = false; // User manually stopped
                 } else {
                     this.recognition.lang = this.elements.language.value;
-                    try { this.recognition.start(); } catch (e) { console.error('Recognition Start Error:', e); }
+                    try { this.recognition.start(); } catch (e) { console.error(e); }
                 }
             }
             
-            async testVoice() {
-                const testText = "જય શ્રી કૃષ્ણ હું વિદુષી આપનો AI આસિસ્ટન્ટ છું આ એક અવાજ પરીક્ષણ છે";
-                this.speakText(testText);
-                this.showNotification('Voice Test શરૂ...', 'info');
-            }
-
             async testApiConnection() {
-                if (!this.apiKey) {
-                    this.showNotification('API Key જરૂરી છે', 'error'); return;
-                }
+                if (!this.apiKey) return;
                 this.updateConnectionStatus('Testing');
-                
                 try {
-                    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
-                    const response = await fetch(testUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Hello" }] }], generationConfig: { maxOutputTokens: 10 } })
-                    });
-                    
-                    if (response.ok) {
-                        this.updateConnectionStatus('Connected');
-                        this.showNotification('API connection સફળ!', 'success');
-                        const successMessage = "API connection સફળ વિદુષી મદદ કરવા તૈયાર છે";
-                        this.addMessage(successMessage, 'ai');
-                        if (this.elements.autoSpeak.checked) { this.speakText(successMessage); }
-                    } else {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error?.message || 'API test failed');
-                    }
+                    // Simple test
+                    await this.callGeminiAPI("Hello");
+                    this.updateConnectionStatus('Connected');
+                    this.showNotification('API Connected', 'success');
                 } catch (error) {
-                    this.updateConnectionStatus('Failed', `❌ API Failed: ${error.message.substring(0, 30)}...`);
-                    this.showNotification('API test નિષ્ફળ: ' + error.message, 'error');
+                    this.updateConnectionStatus('Failed');
                 }
             }
 
             clearChat() {
-                this.elements.chatMessages.innerHTML = `
-                    <div class="message ai">
-                        <div class="avatar"><i class="fas fa-robot"></i></div>
-                        <div class="message-content">નમસ્કાર! હું વિદુષી છું. કૃપા કરીને સેટિંગ્સમાં API Key દાખલ કરો.</div>
-                    </div>
-                `;
-                this.conversationHistory = [];
+                this.elements.chatMessages.innerHTML = `<div class="message ai"><div class="avatar"><i class="fas fa-robot"></i></div><div class="message-content">નમસ્કાર! હું વિદુષી છું.</div></div>`;
                 this.stopAllProcesses();
-                this.showNotification('Chat Clear થઈ ગયો', 'success');
             }
         }
         
-        // App Initialization
         document.addEventListener('DOMContentLoaded', () => {
             window.aiAssistant = new GeminiAIAssistant();
         });
     </script>
 </body>
 </html>
+
 
