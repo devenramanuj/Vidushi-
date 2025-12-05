@@ -437,13 +437,13 @@
             <div class="setting-group">
                 <label><i class="fas fa-brain"></i> AI મોડેલ</label>
                 <div class="model-selector">
-                    <div class="model-card active" data-model="gemini-1.5-flash">
+                    <div class="model-card active" data-model="gemini-2.5-flash">
                         <div class="model-icon">
                             <i class="fas fa-bolt"></i>
                         </div>
                         <div class="model-name">ઝડપી</div>
                     </div>
-                    <div class="model-card" data-model="gemini-1.5-pro">
+                    <div class="model-card" data-model="gemini-2.5-pro">
                         <div class="model-icon">
                             <i class="fas fa-rocket"></i>
                         </div>
@@ -590,13 +590,13 @@
                     this.voiceType = settings.voice || 'female';
                     this.speechRateValue = settings.speechRate || 1;
                     this.autoSpeakEnabled = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-1.5-flash';
+                    this.currentModel = settings.model || 'gemini-2.5-flash';
                 } else {
                     this.language = 'gu-IN';
                     this.voiceType = 'female';
                     this.speechRateValue = 1;
                     this.autoSpeakEnabled = true;
-                    this.currentModel = 'gemini-1.5-flash';
+                    this.currentModel = 'gemini-2.5-flash';
                 }
             }
             
@@ -786,12 +786,12 @@
             async callGeminiAPI(userMessage) {
                 if (!this.apiKey) throw new Error("API Key not set.");
 
-                // Use faster model by default
-                const modelName = this.currentModel || 'gemini-1.5-flash';
+                // Use Gemini 2.5 model as requested
+                const modelName = this.currentModel || 'gemini-2.5-flash';
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
                 
-                // *** OPTIMIZED SYSTEM INSTRUCTION FOR FASTER RESPONSE ***
-                const optimizedInstruction = "તમારું નામ વિદુષી છે. દેવેન્દ્રભાઈએ તમને બનાવ્યા છે. ગુજરાતીમાં જ જવાબ આપો. સંક્ષિપ્ત રહો.";
+                // *** ખૂબ જ ટૂંકું અને ઝડપી માટે ઑપ્ટિમાઇઝ્ડ સિસ્ટમ ઇન્સ્ટ્રક્શન ***
+                const optimizedInstruction = "તમારું નામ વિદુષી છે. દેવેન્દ્રભાઈએ તમને બનાવ્યા છે. ગુજરાતીમાં જ સંક્ષિપ્ત જવાબ આપો.";
                 
                 const requestBody = {
                     contents: [
@@ -801,17 +801,17 @@
                         }
                     ],
                     generationConfig: {
-                        // *** OPTIMIZED FOR SPEED ***
-                        temperature: 0.3, // Slightly higher for variety but still fast
-                        maxOutputTokens: 80, // Much shorter responses = faster
+                        // *** ફટાફટ જવાબ માટે ઑપ્ટિમાઇઝ્ડ ***
+                        temperature: 0.3,
+                        maxOutputTokens: 70, // બહુ ઓછા ટોકન્સ - ઝડપી
                         topP: 0.9,
-                        topK: 1 // Minimal sampling for fastest response
+                        topK: 1
                     }
                 };
                 
-                // Add timeout for faster failure
+                // 8 સેકન્ડનો ટાઈમઆઉટ - ખૂબ ઝડપી
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
                 
                 try {
                     const response = await fetch(apiUrl, {
@@ -843,7 +843,6 @@
                 if (!this.speechSynthesis) return;
                 if (this.speechSynthesis.speaking) this.speechSynthesis.cancel();
                 
-                // Simple speech without complex splitting for faster response
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = this.language;
                 utterance.pitch = this.voiceType === 'female' ? 1.05 : 0.95;
@@ -937,9 +936,9 @@
                 this.rateValue.textContent = '1.0x';
                 this.autoSpeak.checked = true;
                 this.modelCards.forEach(card => {
-                    card.classList.toggle('active', card.dataset.model === 'gemini-1.5-flash');
+                    card.classList.toggle('active', card.dataset.model === 'gemini-2.5-flash');
                 });
-                this.currentModel = 'gemini-1.5-flash';
+                this.currentModel = 'gemini-2.5-flash';
                 this.saveAllSettings();
                 this.showStatus('સેટિંગ્સ સફળતાપૂર્વક રીસેટ થઈ', 'success');
             }
@@ -956,11 +955,11 @@
                     this.speechRate.value = settings.speechRate || 1;
                     this.rateValue.textContent = this.speechRate.value + 'x';
                     this.autoSpeak.checked = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-1.5-flash';
+                    this.currentModel = settings.model || 'gemini-2.5-flash';
                     
-                    // Convert old model names to new ones
-                    if (this.currentModel === 'gemini-2.5-flash') {
-                        this.currentModel = 'gemini-1.5-flash';
+                    // જૂની મોડેલ નેમ્સને નવીમાં કન્વર્ટ કરો
+                    if (this.currentModel.includes('1.5')) {
+                        this.currentModel = this.currentModel.replace('1.5', '2.5');
                     }
                     
                     this.modelCards.forEach(card => {
@@ -1006,12 +1005,12 @@
             }
         }
         
-        // Initialize when DOM is ready
+        // DOM તૈયાર થાય ત્યારે ઇનિશિયલાઇઝ કરો
         document.addEventListener('DOMContentLoaded', () => {
             const vidushi = new VidushiAI();
             window.vidushiAI = vidushi;
             
-            // Add CSS for notification animations
+            // નોટિફિકેશન એનિમેશન માટે CSS ઉમેરો
             const style = document.createElement('style');
             style.textContent = `
                 @keyframes slideInRight {
