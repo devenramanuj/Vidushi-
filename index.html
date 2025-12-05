@@ -437,13 +437,13 @@
             <div class="setting-group">
                 <label><i class="fas fa-brain"></i> AI મોડેલ</label>
                 <div class="model-selector">
-                    <div class="model-card active" data-model="gemini-2.0-flash-exp">
+                    <div class="model-card active" data-model="gemini-1.5-flash">
                         <div class="model-icon">
                             <i class="fas fa-bolt"></i>
                         </div>
-                        <div class="model-name">ઝડપી</div>
+                        <div class="model-name">ઝડપી (ડિફોલ્ટ)</div>
                     </div>
-                    <div class="model-card" data-model="gemini-2.0-flash-thinking-exp">
+                    <div class="model-card" data-model="gemini-1.5-pro">
                         <div class="model-icon">
                             <i class="fas fa-rocket"></i>
                         </div>
@@ -451,7 +451,7 @@
                     </div>
                 </div>
                 <div class="info-box" style="margin-top: 10px;">
-                    સૌથી ઝડપી રિસ્પોન્સ માટે 'ઝડપી' મોડેલ પસંદ કરો.
+                    <strong>મહત્વપૂર્ણ:</strong> Gemini 2.5 મોડેલ હજુ v1beta API માં ઉપલબ્ધ નથી. માત્ર 1.5 મોડેલ કામ કરે છે. જ્યારે 2.5 મોડેલ ઉપલબ્ધ થાય ત્યારે આપોઆપ અપડેટ થઈ જશે.
                 </div>
             </div>
             
@@ -590,13 +590,13 @@
                     this.voiceType = settings.voice || 'female';
                     this.speechRateValue = settings.speechRate || 1;
                     this.autoSpeakEnabled = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-2.0-flash-exp';
+                    this.currentModel = settings.model || 'gemini-1.5-flash';
                 } else {
                     this.language = 'gu-IN';
                     this.voiceType = 'female';
                     this.speechRateValue = 1;
                     this.autoSpeakEnabled = true;
-                    this.currentModel = 'gemini-2.0-flash-exp';
+                    this.currentModel = 'gemini-1.5-flash';
                 }
             }
             
@@ -820,29 +820,25 @@
                     throw new Error("API Key not set.");
                 }
 
-                // Use Gemini 2.0 model (which is actually the latest 2.5)
-                const modelName = this.currentModel || 'gemini-2.0-flash-exp';
+                // Use only Gemini 1.5 models as 2.5 is not available in v1beta
+                const modelName = this.currentModel || 'gemini-1.5-flash';
                 console.log('Model name:', modelName);
                 console.log('API key (first 10 chars):', this.apiKey.substring(0, 10) + '...');
                 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
                 
-                // System instruction as part of the request
-                const systemInstruction = {
-                    role: "user",
-                    parts: [{ 
-                        text: "તમારું નામ વિદુષી છે. તમને દેવેન્દ્રભાઈએ બનાવ્યા છે. તમે ગુજરાતીમાં જ સંક્ષિપ્ત અને સીધા જવાબ આપો. જો વપરાશકર્તા પૂછે કે તમારું નામ શું છે, તો કહો: 'મારું નામ વિદુષી છે અને મને દેવેન્દ્રભાઈએ બનાવ્યા છે.'"
-                    }]
-                };
+                // વિદુષી માટે સિસ્ટમ ઇન્સ્ટ્રક્શન
+                const systemInstruction = "તમારું નામ વિદુષી છે. તમને દેવેન્દ્રભાઈએ બનાવ્યા છે. તમે ગુજરાતીમાં જ સંક્ષિપ્ત અને સીધા જવાબ આપો. જો વપરાશકર્તા પૂછે કે તમારું નામ શું છે, તો કહો: 'મારું નામ વિદુષી છે અને મને દેવેન્દ્રભાઈએ બનાવ્યા છે.'";
                 
                 const requestBody = {
                     contents: [
                         { 
                             role: "user",
-                            parts: [{ text: userMessage }]
+                            parts: [{ 
+                                text: systemInstruction + "\n\n" + userMessage 
+                            }]
                         }
                     ],
-                    system_instruction: systemInstruction,
                     generationConfig: {
                         temperature: 0.3,
                         maxOutputTokens: 200,
@@ -880,6 +876,24 @@
                             const errorData = JSON.parse(errorText);
                             if (errorData.error && errorData.error.message) {
                                 errorMessage = errorData.error.message;
+                                
+                                // Model not found error - try fallback to gemini-1.5-flash
+                                if (errorMessage.includes('models/') && errorMessage.includes('is not found')) {
+                                    console.log('Model not found, trying fallback to gemini-1.5-flash');
+                                    this.currentModel = 'gemini-1.5-flash';
+                                    localStorage.setItem('geminiSettings', JSON.stringify({
+                                        ...JSON.parse(localStorage.getItem('geminiSettings') || '{}'),
+                                        model: 'gemini-1.5-flash'
+                                    }));
+                                    
+                                    // Update UI
+                                    this.modelCards.forEach(card => {
+                                        card.classList.toggle('active', card.dataset.model === 'gemini-1.5-flash');
+                                    });
+                                    
+                                    // Retry with fallback model
+                                    return await this.callGeminiAPI(userMessage);
+                                }
                             }
                         } catch (e) {
                             // If can't parse as JSON, keep text
@@ -1047,9 +1061,9 @@
                 this.rateValue.textContent = '1.0x';
                 this.autoSpeak.checked = true;
                 this.modelCards.forEach(card => {
-                    card.classList.toggle('active', card.dataset.model === 'gemini-2.0-flash-exp');
+                    card.classList.toggle('active', card.dataset.model === 'gemini-1.5-flash');
                 });
-                this.currentModel = 'gemini-2.0-flash-exp';
+                this.currentModel = 'gemini-1.5-flash';
                 this.saveAllSettings();
                 this.showStatus('સેટિંગ્સ સફળતાપૂર્વક રીસેટ થઈ', 'success');
             }
@@ -1071,11 +1085,15 @@
                     this.speechRate.value = settings.speechRate || 1;
                     this.rateValue.textContent = this.speechRate.value + 'x';
                     this.autoSpeak.checked = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-2.0-flash-exp';
+                    this.currentModel = settings.model || 'gemini-1.5-flash';
                     
-                    // Convert old model names to new ones
-                    if (this.currentModel.includes('1.5') || this.currentModel.includes('2.5')) {
-                        this.currentModel = 'gemini-2.0-flash-exp';
+                    // Convert any invalid model names to gemini-1.5-flash
+                    if (this.currentModel.includes('2.0') || this.currentModel.includes('2.5')) {
+                        this.currentModel = 'gemini-1.5-flash';
+                        // Save the corrected model
+                        setTimeout(() => {
+                            this.saveAllSettings();
+                        }, 100);
                     }
                     
                     this.modelCards.forEach(card => {
