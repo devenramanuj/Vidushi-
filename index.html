@@ -808,8 +808,9 @@
                     helpful: ['💡', '🌟', '✨', '🎯', '🎁'],
                     friendly: ['😊', '👋', '💖', '🌸', '🌺'],
                     professional: ['📊', '📈', '🎯', '💼', '🏆'],
-                    // New emotional mood for speaking
-                    speaking: ['🗣️', '💬', '✨', '💖', '🔊'] 
+                    speaking: ['🗣️', '💬', '✨', '💖', '🔊'],
+                    // Added a sad/error mood
+                    sad: ['😔', '❌', '😟', '😥', '💔'] 
                 };
             }
             
@@ -949,7 +950,8 @@
                     this.isListening = true;
                     this.voiceBtn.classList.add('listening');
                     this.updateMood('listening');
-                    this.voiceStatus.textContent = '🎤 સાંભળી રહ્યો છું... બોલો';
+                    // *** સુધારો: લિંગ સુધારો - 'રહ્યો છું' to 'રહી છું' ***
+                    this.voiceStatus.textContent = '🎤 સાંભળી રહી છું... બોલો';
                 };
                 
                 this.recognition.onresult = (event) => {
@@ -1087,6 +1089,9 @@
                     case 'listening':
                         logoCore.style.background = 'linear-gradient(135deg, #667eea, #764ba2, #f093fb)';
                         break;
+                    case 'sad':
+                        logoCore.style.background = 'linear-gradient(135deg, #e34c4c, #c53030, #9b2c2c)';
+                        break;
                     case 'ready':
                     default:
                         logoCore.style.background = 'linear-gradient(135deg, var(--primary), var(--secondary), var(--accent))';
@@ -1135,9 +1140,31 @@
                     return;
                 }
                 
+                // *** સુધારો: 'બંધ' કમાન્ડ ઉમેરવો ***
+                if (text.toLowerCase().includes('બંધ')) {
+                    if (this.speechSynthesis.speaking) {
+                        this.speechSynthesis.cancel();
+                        this.voiceStatus.textContent = '🔇 બોલવાનું બંધ કર્યું';
+                        this.updateMood('ready');
+                        this.showNotification('બોલવાનું સફળતાપૂર્વક બંધ કર્યું', 'info');
+                    } else {
+                        this.voiceStatus.textContent = '🗣️ હું હાલમાં બોલી નથી રહી.';
+                        this.updateMood('ready');
+                        this.showNotification('હું હાલમાં બોલી નથી રહી.', 'info');
+                    }
+                    // Reset state without calling API
+                    this.isProcessing = false;
+                    setTimeout(() => {
+                        this.voiceStatus.textContent = 'Tap to speak with વિદુષી';
+                    }, 3000);
+                    return;
+                }
+                
                 this.isProcessing = true;
                 const emotionalPrefix = this.getEmotionalResponse(text);
-                this.voiceStatus.textContent = emotionalPrefix + '🤔 વિચારી રહ્યો છું...';
+                
+                // *** સુધારો: લિંગ સુધારો - 'રહ્યો છું' to 'રહી છું' ***
+                this.voiceStatus.textContent = emotionalPrefix + '🤔 વિચારી રહી છું...';
                 
                 try {
                     const response = await this.callGeminiAPI(text);
@@ -1160,19 +1187,26 @@
                     }
                 } catch (error) {
                     console.error('Gemini API error:', error);
-                    this.voiceStatus.textContent = '❌ ભૂલ';
+                    this.voiceStatus.textContent = '❌ ભૂલ: API નિષ્ફળ';
                     this.showNotification('API Error: ' + error.message, 'error');
                     this.updateMood('sad');
                 } finally {
                     this.isProcessing = false;
                     setTimeout(() => {
-                        this.updateMood('ready');
-                        this.voiceStatus.textContent = 'Tap to speak with વિદુષી';
+                        // Wait for speaking to finish before setting status back to ready, unless 'બંધ' was called.
+                        if (!this.speechSynthesis.speaking) {
+                            this.updateMood('ready');
+                            this.voiceStatus.textContent = 'Tap to speak with વિદુષી';
+                        }
                     }, 3000);
                 }
             }
             
             async callGeminiAPI(userMessage) {
+                if (!this.apiKey) {
+                    throw new Error("API Key not set. Please go to settings.");
+                }
+
                 const modelMap = {
                     'gemini-2.5-flash': 'gemini-2.5-flash',
                     'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp',
@@ -1181,18 +1215,21 @@
                 };
                 
                 const modelName = modelMap[this.currentModel] || this.currentModel;
+                // Note: v1beta endpoint is used, which does not accept a 'config' field
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
                 
-                // *** સુધારો: વધુ ભાવનાત્મક પ્રતિભાવ માટે સિસ્ટમ સૂચના ઉમેરવી ***
+                // *** સુધારો: API ભૂલ સુધારવા માટે systemInstruction ને contents એરેમાં role: "system" તરીકે ઉમેરવું ***
                 const requestBody = {
-                    config: {
-                         // AI ને વધુ ભાવનાત્મક અને મધુરતા સાથે જવાબ આપવા માટે પ્રોમ્પ્ટ કરો
-                        systemInstruction: "તમે એક ગુજરાતી AI સહાયક 'વિદુષી' છો. તમારા જવાબો અત્યંત ભાવનાત્મક, મદદરૂપ, ઉત્સાહી અને મધુરતાથી ભરેલા હોવા જોઈએ. વાતચીતનો સ્વર હંમેશા સૌમ્ય અને આદરપૂર્ણ રાખો. માત્ર ગુજરાતીમાં જ જવાબ આપો.",
-                    },
-                    contents: [{
-                        role: "user",
-                        parts: [{ text: userMessage }]
-                    }],
+                    contents: [
+                        { // System Instruction as the first part of the conversation
+                            role: "system",
+                            parts: [{ text: "તમે એક ગુજરાતી AI સહાયક 'વિદુષી' છો. તમારા જવાબો અત્યંત ભાવનાત્મક, મદદરૂપ, ઉત્સાહી અને મધુરતાથી ભરેલા હોવા જોઈએ. વાતચીતનો સ્વર હંમેશા સૌમ્ય અને આદરપૂર્ણ રાખો. માત્ર ગુજરાતીમાં જ જવાબ આપો." }]
+                        },
+                        { // User's message
+                            role: "user",
+                            parts: [{ text: userMessage }]
+                        }
+                    ],
                     generationConfig: {
                         temperature: 0.8,
                         topK: 40,
@@ -1225,8 +1262,7 @@
             
             // વિરામચિહ્નો (Punctuation) ને બોલતા અટકાવવા માટે ટેક્સ્ટ સાફ કરવાનું કાર્ય
             sanitizeTextForSpeech(text) {
-                // કોમા (,) અને અન્ય અલ્પવિરામ ચિહ્નોને ખાલી જગ્યાથી બદલો જેથી તે બોલાય નહીં
-                // નોંધ: પૂર્ણવિરામ (.), પ્રશ્નાર્થ ચિહ્ન (?) અને ઉદ્ગાર ચિહ્ન (!) સેન્ટેન્સ સ્પ્લિટિંગ માટે જરૂરી છે, તેથી તેને રહેવા દો
+                // કોમા (,), સેમીકોલન (;) અને કોલોન (:) ને ખાલી જગ્યાથી બદલો જેથી તે બોલાય નહીં
                 return text.replace(/[,;:]/g, ' '); 
             }
             
@@ -1238,7 +1274,7 @@
                 }
                 
                 // Break text into sentences for natural pauses
-                const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                const sentences = text.split(/[.!?\n]+/).filter(s => s.trim().length > 0);
                 
                 // Enhanced voice selection
                 const voices = this.speechSynthesis.getVoices();
@@ -1282,30 +1318,25 @@
                 const speakNextSentence = () => {
                     if (sentenceIndex >= sentences.length) {
                         this.updateMood('ready');
+                        this.voiceStatus.textContent = 'Tap to speak with વિદુષી'; // Reset status after speaking
                         return;
                     }
                     
-                    // *** સુધારો: વિરામચિહ્નો દૂર કરો ***
                     const sentenceText = this.sanitizeTextForSpeech(sentences[sentenceIndex]);
                     
                     const utterance = new SpeechSynthesisUtterance(sentenceText);
                     utterance.lang = this.language;
                     
-                    // *** સુધારો: અવાજની મધુરતા વધારવા માટે Pitch અને Rate માં ફેરફાર ***
+                    // Pitch (પિચ) ને થોડી વધારીને વધુ 'સૌમ્ય' કરો
+                    utterance.pitch = this.voiceType === 'female' ? 1.15 : 0.9; 
                     // Rate (ગતિ) થોડી ઘટાડીને વધુ સ્પષ્ટ અને મધુર કરો
                     utterance.rate = parseFloat(this.speechRateValue) * 0.9; 
-                    // Female Pitch (પિચ) ને થોડી વધારીને વધુ 'સૌમ્ય' કરો
-                    utterance.pitch = this.voiceType === 'female' ? 1.15 : 0.9; 
                     utterance.volume = 1.0;
                     utterance.voice = selectedVoice;
                     
-                    // Add natural prosody
-                    if (sentenceIndex === 0) {
-                        utterance.pitch *= 1.05;
-                    }
-                    
                     utterance.onstart = () => {
-                        this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' બોલી રહ્યો છું...';
+                        // *** સુધારો: લિંગ સુધારો - 'બોલી રહ્યો છું' to 'બોલી રહી છું' ***
+                        this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' બોલી રહી છું...';
                         this.updateMood('speaking');
                     };
                     
@@ -1336,7 +1367,8 @@
                     return;
                 }
                 
-                this.voiceStatus.textContent = '🔄 API ચકાસી રહ્યો છું...';
+                // *** સુધારો: લિંગ સુધારો - 'ચકાસી રહ્યો છું' to 'ચકાસી રહી છું' ***
+                this.voiceStatus.textContent = '🔄 API ચકાસી રહી છું...';
                 this.updateMood('thinking');
                 
                 try {
