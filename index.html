@@ -1144,7 +1144,7 @@
                     return;
                 }
                 
-                // *** સુધારો: 'બંધ' કમાન્ડ ઉમેરવો ***
+                // *** 'બંધ' કમાન્ડ ઉમેરવો ***
                 if (text.toLowerCase().includes('બંધ')) {
                     if (this.speechSynthesis.speaking) {
                         this.speechSynthesis.cancel();
@@ -1260,10 +1260,20 @@
                 }
             }
             
-            // વિરામચિહ્નો (Punctuation) ને બોલતા અટકાવવા માટે ટેક્સ્ટ સાફ કરવાનું કાર્ય
+            // *** સુધારો: વિરામચિહ્નો (Punctuation) ને બોલતા અટકાવવા માટે ટેક્સ્ટ સાફ કરવાનું કાર્ય ***
             sanitizeTextForSpeech(text) {
-                // કોમા (,), સેમીકોલન (;) અને કોલોન (:) ને ખાલી જગ્યાથી બદલો
-                return text.replace(/[,;:]/g, ' '); 
+                // આ Regular Expression કોમા, કોલન, સેમીકોલન, કૌંસ, ક્વોટ્સ, હાઇફન, સ્લેશ, અને અન્ય પ્રતીકોને 
+                // ખાલી જગ્યાથી બદલી નાખશે, જેથી TTS તેમને બોલે નહીં.
+                // માત્ર અક્ષરો, નંબરો અને સ્પેસ જાળવી રાખવામાં આવશે.
+                let cleanedText = text.replace(/[\,;\:\-—\(\)\[\]\{\}\"\'\/\@\#\$\%\^\&\*]/g, ' '); 
+                
+                // ગુજરાતી ડંડો (પૂર્ણવિરામ) ને પણ દૂર કરો, કારણ કે તે પણ ક્યારેક બોલાઈ જાય છે.
+                cleanedText = cleanedText.replace(/।/g, ' ');
+
+                // સફાઈને કારણે બનેલ વધારાની સ્પેસ દૂર કરો
+                cleanedText = cleanedText.replace(/\s+/g, ' ');
+                
+                return cleanedText.trim();
             }
             
             speakTextNatural(text) {
@@ -1273,7 +1283,7 @@
                     this.speechSynthesis.cancel();
                 }
                 
-                // Break text into sentences for natural pauses
+                // Break text into sentences for natural pauses (. ! ? \n)
                 const sentences = text.split(/[.!?\n]+/).filter(s => s.trim().length > 0);
                 
                 // Enhanced voice selection
@@ -1322,8 +1332,16 @@
                         return;
                     }
                     
+                    // સેન્ટેન્સ બોલતા પહેલા તેને સાફ કરો (Sanitize)
                     const sentenceText = this.sanitizeTextForSpeech(sentences[sentenceIndex]);
                     
+                    // જો સેન્ટેન્સ સાફ કર્યા પછી ખાલી હોય તો આગળ વધો
+                    if (!sentenceText.length) {
+                        sentenceIndex++;
+                        speakNextSentence();
+                        return;
+                    }
+
                     const utterance = new SpeechSynthesisUtterance(sentenceText);
                     utterance.lang = this.language;
                     
