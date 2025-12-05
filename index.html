@@ -437,13 +437,13 @@
             <div class="setting-group">
                 <label><i class="fas fa-brain"></i> AI મોડેલ</label>
                 <div class="model-selector">
-                    <div class="model-card active" data-model="gemini-2.5-flash">
+                    <div class="model-card active" data-model="gemini-2.5-flash-exp-03-25">
                         <div class="model-icon">
                             <i class="fas fa-bolt"></i>
                         </div>
                         <div class="model-name">ઝડપી</div>
                     </div>
-                    <div class="model-card" data-model="gemini-2.5-pro">
+                    <div class="model-card" data-model="gemini-2.5-pro-exp-03-25">
                         <div class="model-icon">
                             <i class="fas fa-rocket"></i>
                         </div>
@@ -590,13 +590,13 @@
                     this.voiceType = settings.voice || 'female';
                     this.speechRateValue = settings.speechRate || 1;
                     this.autoSpeakEnabled = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-2.5-flash';
+                    this.currentModel = settings.model || 'gemini-2.5-flash-exp-03-25';
                 } else {
                     this.language = 'gu-IN';
                     this.voiceType = 'female';
                     this.speechRateValue = 1;
                     this.autoSpeakEnabled = true;
-                    this.currentModel = 'gemini-2.5-flash';
+                    this.currentModel = 'gemini-2.5-flash-exp-03-25';
                 }
             }
             
@@ -628,6 +628,7 @@
                 
                 this.recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
+                    console.log('વપરાશકર્તા બોલ્યું:', transcript);
                     this.processUserInput(transcript);
                 };
                 
@@ -639,7 +640,10 @@
                     }
                 };
                 
-                this.recognition.onend = () => this.stopListening();
+                this.recognition.onend = () => {
+                    console.log('Speech recognition ended');
+                    this.stopListening();
+                };
             }
             
             setupEventListeners() {
@@ -667,6 +671,7 @@
                         this.modelCards.forEach(c => c.classList.remove('active'));
                         card.classList.add('active');
                         this.currentModel = card.dataset.model;
+                        console.log('મોડેલ બદલ્યું:', this.currentModel);
                     });
                 });
                 
@@ -690,32 +695,42 @@
             }
             
             toggleListening() {
-                if (!this.recognition) return;
+                if (!this.recognition) {
+                    this.showNotification('સ્પીચ રેકગ્નિશન સપોર્ટેડ નથી', 'error');
+                    return;
+                }
+                
                 if (!this.apiKey) {
                     this.showNotification('કૃપા કરીને પહેલા તમારી API કી ઉમેરો', 'error');
                     return;
                 }
+                
                 if (this.isListening) {
+                    console.log('સાંભળવું બંધ કરી રહ્યા છીએ...');
                     this.recognition.stop();
                 } else {
                     try {
+                        console.log('સાંભળવું શરૂ કરી રહ્યા છીએ...');
                         this.recognition.lang = this.language;
                         this.recognition.start();
                     } catch (error) {
                         console.error('Recognition start error:', error);
+                        this.showNotification('માઇક્રોફોન શરૂ કરવામાં ભૂલ: ' + error.message, 'error');
                     }
                 }
             }
             
             stopListening() {
+                console.log('stopListening called');
                 this.isListening = false;
                 this.voiceBtn.classList.remove('listening');
                 this.updateMood('ready');
                 if (!this.isProcessing && !this.speechSynthesis.speaking) {
-                    this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો';
-                }
-                if (this.recognition && this.recognition.stop) {
-                    try { this.recognition.stop(); } catch (e) {}
+                    setTimeout(() => {
+                        if (!this.isListening && !this.isProcessing) {
+                            this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો';
+                        }
+                    }, 1000);
                 }
             }
             
@@ -745,10 +760,21 @@
             }
             
             async processUserInput(text) {
-                if (!text.trim()) return;
-                if (this.isProcessing) return;
+                if (!text.trim()) {
+                    console.log('ખાલી ટેક્સ્ટ, વળતો');
+                    return;
+                }
                 
+                if (this.isProcessing) {
+                    console.log('પહેલેથી પ્રોસેસ કરી રહ્યા છીએ, વળતો');
+                    return;
+                }
+                
+                console.log('પ્રોસેસ કરી રહ્યા છીએ:', text);
+                
+                // 'બંધ' કમાન્ડ
                 if (text.toLowerCase().includes('બંધ')) {
+                    console.log('બંધ કમાન્ડ મળ્યો');
                     if (this.speechSynthesis.speaking) {
                         this.speechSynthesis.cancel();
                         this.voiceStatus.textContent = '🔇 બોલવાનું બંધ કર્યું';
@@ -765,83 +791,150 @@
                 this.voiceStatus.textContent = this.getRandomEmoji('thinking') + ' વિચારી રહી છું...';
                 
                 try {
+                    console.log('API ને કૉલ કરી રહ્યા છીએ...');
                     const response = await this.callGeminiAPI(text);
+                    console.log('API રિસ્પોન્સ:', response);
                     
                     if (response && this.autoSpeakEnabled) {
-                        this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' ' + response.substring(0, 40) + '...';
+                        this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' ' + (response.length > 40 ? response.substring(0, 40) + '...' : response);
                         this.speakTextNatural(response);
                     } else if (response) {
-                        this.voiceStatus.textContent = '✅ જવાબ મળ્યો: ' + response.substring(0, 30) + '...';
+                        this.voiceStatus.textContent = '✅ જવાબ મળ્યો: ' + (response.length > 30 ? response.substring(0, 30) + '...' : response);
+                    } else {
+                        this.voiceStatus.textContent = '⚠️ જવાબ મળ્યો નથી';
+                        this.showNotification('API થી જવાબ મળ્યો નથી', 'error');
                     }
                 } catch (error) {
                     console.error('Gemini API error:', error);
-                    this.voiceStatus.textContent = this.getRandomEmoji('error') + ' ભૂલ: API નિષ્ફળ';
+                    this.voiceStatus.textContent = this.getRandomEmoji('error') + ' ભૂલ: ' + error.message;
                     this.updateMood('error');
-                    this.showNotification('API ભૂલ આવી. સેટિંગ્સ તપાસો.', 'error');
+                    this.showNotification('API ભૂલ: ' + error.message, 'error');
                 } finally {
                     this.isProcessing = false;
+                    console.log('પ્રોસેસીંગ પૂર્ણ');
                 }
             }
             
             async callGeminiAPI(userMessage) {
-                if (!this.apiKey) throw new Error("API Key not set.");
+                if (!this.apiKey) {
+                    throw new Error("API Key not set.");
+                }
 
-                // Use Gemini 2.5 model as requested
-                const modelName = this.currentModel || 'gemini-2.5-flash';
+                // Gemini 2.5 મોડેલનું સાચું નામ
+                const modelName = this.currentModel || 'gemini-2.5-flash-exp-03-25';
+                console.log('મોડેલ નામ:', modelName);
+                console.log('API કી:', this.apiKey.substring(0, 10) + '...');
+                
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
                 
-                // *** ખૂબ જ ટૂંકું અને ઝડપી માટે ઑપ્ટિમાઇઝ્ડ સિસ્ટમ ઇન્સ્ટ્રક્શન ***
-                const optimizedInstruction = "તમારું નામ વિદુષી છે. દેવેન્દ્રભાઈએ તમને બનાવ્યા છે. ગુજરાતીમાં જ સંક્ષિપ્ત જવાબ આપો.";
+                // *** ટૂંકું અને અસરકારક સિસ્ટમ ઇન્સ્ટ્રક્શન ***
+                const systemInstruction = {
+                    role: "user",
+                    parts: [{ 
+                        text: "તમારું નામ વિદુષી છે. તમને દેવેન્દ્રભાઈએ બનાવ્યા છે. તમે ગુજરાતીમાં જ સંક્ષિપ્ત અને સીધા જવાબ આપો. જો વપરાશકર્તા પૂછે કે તમારું નામ શું છે, તો કહો: 'મારું નામ વિદુષી છે અને મને દેવેન્દ્રભાઈએ બનાવ્યા છે.'"
+                    }]
+                };
                 
                 const requestBody = {
                     contents: [
                         { 
                             role: "user",
-                            parts: [{ text: `${optimizedInstruction} પ્રશ્ન: ${userMessage}` }]
+                            parts: [{ text: userMessage }]
                         }
                     ],
+                    systemInstruction: systemInstruction.parts[0],
                     generationConfig: {
-                        // *** ફટાફટ જવાબ માટે ઑપ્ટિમાઇઝ્ડ ***
                         temperature: 0.3,
-                        maxOutputTokens: 70, // બહુ ઓછા ટોકન્સ - ઝડપી
+                        maxOutputTokens: 100,
                         topP: 0.9,
-                        topK: 1
-                    }
+                        topK: 40
+                    },
+                    safetySettings: [
+                        {
+                            category: "HARM_CATEGORY_HARASSMENT",
+                            threshold: "BLOCK_NONE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_HATE_SPEECH",
+                            threshold: "BLOCK_NONE"
+                        }
+                    ]
                 };
                 
-                // 8 સેકન્ડનો ટાઈમઆઉટ - ખૂબ ઝડપી
+                console.log('API રિક્વેસ્ટ બોડી:', JSON.stringify(requestBody));
+                
+                // 15 સેકન્ડનો ટાઈમઆઉટ
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
                 
                 try {
                     const response = await fetch(apiUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json'
+                        },
                         body: JSON.stringify(requestBody),
                         signal: controller.signal
                     });
                     
                     clearTimeout(timeoutId);
                     
+                    console.log('API રિસ્પોન્સ સ્ટેટસ:', response.status);
+                    
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+                        const errorText = await response.text();
+                        console.error('API ભૂલ રિસ્પોન્સ:', errorText);
+                        let errorMessage = `API ભૂલ: ${response.status}`;
+                        
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            if (errorData.error && errorData.error.message) {
+                                errorMessage = errorData.error.message;
+                            }
+                        } catch (e) {
+                            // JSON પાર્સ ન થઈ શકે તો ટેક્સ્ટ જ રાખો
+                        }
+                        
+                        throw new Error(errorMessage);
                     }
                     
                     const data = await response.json();
-                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "ક્ષમા કરશો, જવાબ મળ્યો નથી.";
+                    console.log('API સક્સેસ રિસ્પોન્સ:', data);
+                    
+                    if (data.candidates && data.candidates.length > 0 && 
+                        data.candidates[0].content && 
+                        data.candidates[0].content.parts && 
+                        data.candidates[0].content.parts.length > 0) {
+                        
+                        const responseText = data.candidates[0].content.parts[0].text;
+                        console.log('API જવાબ ટેક્સ્ટ:', responseText);
+                        return responseText;
+                    } else {
+                        console.warn('API રિસ્પોન્સમાં કોઈ જવાબ નથી:', data);
+                        return "માફ કરશો, મને જવાબ નથી મળ્યો.";
+                    }
+                    
                 } catch (error) {
                     clearTimeout(timeoutId);
+                    console.error('API કૉલ કરતી વખતે ભૂલ:', error);
+                    
                     if (error.name === 'AbortError') {
                         throw new Error('રિક્વેસ્ટ ટાઇમઆઉટ થઈ. ફરી પ્રયાસ કરો.');
                     }
+                    
                     throw error;
                 }
             }
             
             speakTextNatural(text, isGreeting = false) {
-                if (!this.speechSynthesis) return;
-                if (this.speechSynthesis.speaking) this.speechSynthesis.cancel();
+                if (!this.speechSynthesis) {
+                    console.log('Speech synthesis not available');
+                    return;
+                }
+                
+                if (this.speechSynthesis.speaking) {
+                    this.speechSynthesis.cancel();
+                }
                 
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = this.language;
@@ -855,14 +948,24 @@
                 utterance.voice = selectedVoice;
                 
                 utterance.onstart = () => {
+                    console.log('બોલવું શરૂ કર્યું:', text);
                     this.updateMood('speaking');
                 };
                 
                 utterance.onend = () => {
+                    console.log('બોલવું પૂર્ણ');
                     this.updateMood('ready');
                     if (this.voiceStatus && !this.isProcessing && !this.isListening) {
-                        this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો';
+                        setTimeout(() => {
+                            if (!this.isProcessing && !this.isListening) {
+                                this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો';
+                            }
+                        }, 1000);
                     }
+                };
+                
+                utterance.onerror = (event) => {
+                    console.error('Speech synthesis error:', event);
                 };
                 
                 this.speechSynthesis.speak(utterance);
@@ -879,17 +982,24 @@
                     this.showNotification('કૃપા કરીને પહેલા તમારી API કી ઉમેરો', 'error');
                     return;
                 }
+                
                 this.voiceStatus.textContent = '🔄 API ચકાસી રહી છું...';
                 this.updateMood('thinking');
                 
                 this.callGeminiAPI("તારું નામ શું છે?")
                     .then(response => {
+                        console.log('API ટેસ્ટ રિસ્પોન્સ:', response);
                         this.voiceStatus.textContent = '✅ API જોડાણ સફળ';
                         this.updateMood('ready');
                         this.showNotification('API connection successful!', 'success');
-                        if (this.autoSpeakEnabled) this.speakTextNatural(response);
+                        if (this.autoSpeakEnabled) {
+                            setTimeout(() => {
+                                this.speakTextNatural(response);
+                            }, 1000);
+                        }
                     })
                     .catch(error => {
+                        console.error('API ટેસ્ટ ભૂલ:', error);
                         this.voiceStatus.textContent = '❌ API જોડાણ નિષ્ફળ';
                         this.updateMood('error');
                         this.showNotification('API test failed: ' + error.message, 'error');
@@ -902,15 +1012,23 @@
                     this.showStatus('કૃપા કરીને API કી દાખલ કરો', 'error');
                     return;
                 }
-                if (!apiKey.startsWith('AIza')) {
-                    this.showStatus('અયોગ્ય API કી ફોર્મેટ', 'error');
+                
+                if (apiKey === '•'.repeat(32)) {
+                    this.showStatus('API કી પહેલેથી જ સેવ છે', 'info');
                     return;
                 }
+                
+                if (!apiKey.startsWith('AIza')) {
+                    this.showStatus('અયોગ્ય API કી ફોર્મેટ. AIza... થી શરૂ થવી જોઈએ', 'error');
+                    return;
+                }
+                
                 this.apiKey = apiKey;
                 localStorage.setItem('geminiApiKey', apiKey);
                 this.apiKeyInput.type = 'password';
                 this.apiKeyInput.value = '•'.repeat(32);
                 this.showStatus('API કી સફળતાપૂર્વક સેવ થઈ', 'success');
+                console.log('API કી સેવ થઈ');
             }
             
             saveAllSettings() {
@@ -921,12 +1039,15 @@
                     autoSpeak: this.autoSpeak.checked,
                     model: this.currentModel
                 };
+                
                 localStorage.setItem('geminiSettings', JSON.stringify(settings));
                 this.language = settings.language;
                 this.voiceType = settings.voice;
                 this.speechRateValue = settings.speechRate;
                 this.autoSpeakEnabled = settings.autoSpeak;
+                
                 this.showStatus('બધી સેટિંગ્સ સફળતાપૂર્વક સેવ થઈ', 'success');
+                console.log('સેટિંગ્સ સેવ થઈ:', settings);
             }
             
             resetSettings() {
@@ -936,16 +1057,21 @@
                 this.rateValue.textContent = '1.0x';
                 this.autoSpeak.checked = true;
                 this.modelCards.forEach(card => {
-                    card.classList.toggle('active', card.dataset.model === 'gemini-2.5-flash');
+                    card.classList.toggle('active', card.dataset.model === 'gemini-2.5-flash-exp-03-25');
                 });
-                this.currentModel = 'gemini-2.5-flash';
+                this.currentModel = 'gemini-2.5-flash-exp-03-25';
                 this.saveAllSettings();
                 this.showStatus('સેટિંગ્સ સફળતાપૂર્વક રીસેટ થઈ', 'success');
             }
             
             loadSettings() {
                 this.apiKey = localStorage.getItem('geminiApiKey') || null;
-                if (this.apiKey) this.apiKeyInput.value = '•'.repeat(32);
+                if (this.apiKey) {
+                    this.apiKeyInput.value = '•'.repeat(32);
+                    console.log('API કી લોડ થઈ');
+                } else {
+                    console.log('કોઈ API કી નથી');
+                }
                 
                 const savedSettings = localStorage.getItem('geminiSettings');
                 if (savedSettings) {
@@ -955,16 +1081,22 @@
                     this.speechRate.value = settings.speechRate || 1;
                     this.rateValue.textContent = this.speechRate.value + 'x';
                     this.autoSpeak.checked = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-2.5-flash';
+                    this.currentModel = settings.model || 'gemini-2.5-flash-exp-03-25';
                     
                     // જૂની મોડેલ નેમ્સને નવીમાં કન્વર્ટ કરો
                     if (this.currentModel.includes('1.5')) {
-                        this.currentModel = this.currentModel.replace('1.5', '2.5');
+                        this.currentModel = 'gemini-2.5-flash-exp-03-25';
+                    } else if (this.currentModel === 'gemini-2.5-flash') {
+                        this.currentModel = 'gemini-2.5-flash-exp-03-25';
+                    } else if (this.currentModel === 'gemini-2.5-pro') {
+                        this.currentModel = 'gemini-2.5-pro-exp-03-25';
                     }
                     
                     this.modelCards.forEach(card => {
                         card.classList.toggle('active', card.dataset.model === this.currentModel);
                     });
+                    
+                    console.log('સેટિંગ્સ લોડ થઈ:', settings);
                 }
             }
             
@@ -975,7 +1107,7 @@
                     top: 15px;
                     right: 15px;
                     padding: 10px 15px;
-                    background: ${type === 'success' ? '#6bcf7f' : type === 'error' ? '#e34c4c' : '#ffffff'};
+                    background: ${type === 'success' ? '#6bcf7f' : type === 'error' ? '#e34c4c' : type === 'info' ? '#ffffff' : '#ffffff'};
                     color: ${type === 'info' ? '#000000' : '#000000'};
                     border-radius: 5px;
                     z-index: 10000;
@@ -992,7 +1124,7 @@
                     setTimeout(() => {
                         if (notification.parentNode) notification.parentNode.removeChild(notification);
                     }, 400);
-                }, 3000);
+                }, 4000);
             }
             
             showStatus(message, type) {
@@ -1000,7 +1132,7 @@
                     this.statusMessage.textContent = message;
                     this.statusMessage.className = `status-message ${type}`;
                     this.statusMessage.style.display = 'block';
-                    setTimeout(() => { this.statusMessage.style.display = 'none'; }, 3000);
+                    setTimeout(() => { this.statusMessage.style.display = 'none'; }, 4000);
                 }
             }
         }
@@ -1009,6 +1141,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const vidushi = new VidushiAI();
             window.vidushiAI = vidushi;
+            console.log('વિદુષી એપ્લિકેશન શરૂ થઈ');
             
             // નોટિફિકેશન એનિમેશન માટે CSS ઉમેરો
             const style = document.createElement('style');
