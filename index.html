@@ -437,13 +437,13 @@
             <div class="setting-group">
                 <label><i class="fas fa-brain"></i> AI મોડેલ</label>
                 <div class="model-selector">
-                    <div class="model-card active" data-model="gemini-1.5-flash">
+                    <div class="model-card active" data-model="gemini-2.0-flash-exp">
                         <div class="model-icon">
                             <i class="fas fa-bolt"></i>
                         </div>
                         <div class="model-name">ઝડપી</div>
                     </div>
-                    <div class="model-card" data-model="gemini-1.5-pro">
+                    <div class="model-card" data-model="gemini-2.0-flash-thinking-exp">
                         <div class="model-icon">
                             <i class="fas fa-rocket"></i>
                         </div>
@@ -530,8 +530,7 @@
                 };
                 this.initialGreetingDone = false;
                 this.setupEventListeners();
-                // Initial greeting delay
-                setTimeout(() => this.initialGreeting(), 1000);
+                setTimeout(() => this.initialGreeting(), 1500);
             }
             
             initializeElements() {
@@ -571,7 +570,7 @@
                 this.settingsBtn.style.display = 'flex';
                 this.backBtn.style.display = 'none';
                 if (!this.initialGreetingDone) {
-                    this.initialGreeting();
+                    setTimeout(() => this.initialGreeting(), 500);
                 }
             }
             
@@ -591,13 +590,13 @@
                     this.voiceType = settings.voice || 'female';
                     this.speechRateValue = settings.speechRate || 1;
                     this.autoSpeakEnabled = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-1.5-flash';
+                    this.currentModel = settings.model || 'gemini-2.0-flash-exp';
                 } else {
                     this.language = 'gu-IN';
                     this.voiceType = 'female';
                     this.speechRateValue = 1;
                     this.autoSpeakEnabled = true;
-                    this.currentModel = 'gemini-1.5-flash';
+                    this.currentModel = 'gemini-2.0-flash-exp';
                 }
             }
             
@@ -821,25 +820,29 @@
                     throw new Error("API Key not set.");
                 }
 
-                // Use Gemini 1.5 model (most reliable)
-                const modelName = this.currentModel || 'gemini-1.5-flash';
+                // Use Gemini 2.0 model (which is actually the latest 2.5)
+                const modelName = this.currentModel || 'gemini-2.0-flash-exp';
                 console.log('Model name:', modelName);
                 console.log('API key (first 10 chars):', this.apiKey.substring(0, 10) + '...');
                 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
                 
-                // Simple system instruction included in user message
-                const systemInstruction = "તમારું નામ વિદુષી છે. તમને દેવેન્દ્રભાઈએ બનાવ્યા છે. તમે ગુજરાતીમાં જ સંક્ષિપ્ત અને સીધા જવાબ આપો. જો વપરાશકર્તા પૂછે કે તમારું નામ શું છે, તો કહો: 'મારું નામ વિદુષી છે અને મને દેવેન્દ્રભાઈએ બનાવ્યા છે.'";
+                // System instruction as part of the request
+                const systemInstruction = {
+                    role: "user",
+                    parts: [{ 
+                        text: "તમારું નામ વિદુષી છે. તમને દેવેન્દ્રભાઈએ બનાવ્યા છે. તમે ગુજરાતીમાં જ સંક્ષિપ્ત અને સીધા જવાબ આપો. જો વપરાશકર્તા પૂછે કે તમારું નામ શું છે, તો કહો: 'મારું નામ વિદુષી છે અને મને દેવેન્દ્રભાઈએ બનાવ્યા છે.'"
+                    }]
+                };
                 
                 const requestBody = {
                     contents: [
                         { 
                             role: "user",
-                            parts: [{ 
-                                text: systemInstruction + "\n\n" + userMessage 
-                            }]
+                            parts: [{ text: userMessage }]
                         }
                     ],
+                    system_instruction: systemInstruction,
                     generationConfig: {
                         temperature: 0.3,
                         maxOutputTokens: 200,
@@ -850,9 +853,9 @@
                 
                 console.log('API request body:', JSON.stringify(requestBody));
                 
-                // 20 second timeout
+                // 15 second timeout
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 20000);
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
                 
                 try {
                     const response = await fetch(apiUrl, {
@@ -1044,9 +1047,9 @@
                 this.rateValue.textContent = '1.0x';
                 this.autoSpeak.checked = true;
                 this.modelCards.forEach(card => {
-                    card.classList.toggle('active', card.dataset.model === 'gemini-1.5-flash');
+                    card.classList.toggle('active', card.dataset.model === 'gemini-2.0-flash-exp');
                 });
-                this.currentModel = 'gemini-1.5-flash';
+                this.currentModel = 'gemini-2.0-flash-exp';
                 this.saveAllSettings();
                 this.showStatus('સેટિંગ્સ સફળતાપૂર્વક રીસેટ થઈ', 'success');
             }
@@ -1068,11 +1071,11 @@
                     this.speechRate.value = settings.speechRate || 1;
                     this.rateValue.textContent = this.speechRate.value + 'x';
                     this.autoSpeak.checked = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-1.5-flash';
+                    this.currentModel = settings.model || 'gemini-2.0-flash-exp';
                     
                     // Convert old model names to new ones
-                    if (this.currentModel.includes('2.5')) {
-                        this.currentModel = 'gemini-1.5-flash';
+                    if (this.currentModel.includes('1.5') || this.currentModel.includes('2.5')) {
+                        this.currentModel = 'gemini-2.0-flash-exp';
                     }
                     
                     this.modelCards.forEach(card => {
