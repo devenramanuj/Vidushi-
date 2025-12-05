@@ -186,6 +186,7 @@
             gap: 15px;
         }
         
+        /* MIC BUTTON */
         .voice-btn {
             width: 70px;
             height: 70px;
@@ -200,6 +201,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         
         .voice-btn:hover {
@@ -231,6 +233,30 @@
             align-items: center;
             justify-content: center;
             border: 2px solid var(--secondary-bg);
+        }
+
+        /* STOP BUTTON (RED ROUND) */
+        #stopBtn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ff0000; /* Bright Red */
+            border: 2px solid #8b0000;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(255, 0, 0, 0.2);
+        }
+
+        #stopBtn:hover {
+            background: #cc0000;
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(255, 0, 0, 0.4);
         }
         
         @keyframes pulse-ring {
@@ -452,8 +478,9 @@
                         <i class="fas fa-microphone"></i>
                     </button>
 
-                    <button class="action-buttons" id="stopBtn" style="margin-top: 15px; width: auto; background: #8b0000;">
-                        <i class="fas fa-stop"></i> વાતચીત બંધ કરો (Stop)
+                    <!-- New Round Stop Button -->
+                    <button id="stopBtn" title="વાતચીત બંધ કરો (Mute)">
+                        <i class="fas fa-volume-xmark"></i>
                     </button>
                     
                     <div class="voice-visualizer" id="voiceVisualizer" style="height: 5px; margin-top: 10px; opacity: 0;">
@@ -991,6 +1018,20 @@
                     this.updateConnectionStatus('Failed');
                 }
             }
+
+            clearChat() {
+                this.elements.chatMessages.innerHTML = `<div class="message ai"><div class="avatar"><i class="fas fa-robot"></i></div><div class="message-content">નમસ્કાર! હું વિદુષી છું.</div></div>`;
+                this.stopAllProcesses();
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            window.aiAssistant = new GeminiAIAssistant();
+        });
+    </script>
+</body>
+</html>
+
 
             clearChat() {
                 this.elements.chatMessages.innerHTML = `<div class="message ai"><div class="avatar"><i class="fas fa-robot"></i></div><div class="message-content">નમસ્કાર! હું વિદુષી છું.</div></div>`;
