@@ -268,6 +268,18 @@
             border-radius: 50%;
             background: var(--status-red);
         }
+        
+        /* Screen Lock Indicator */
+        .screen-lock-status {
+            font-size: 10px;
+            color: #666;
+            margin-left: 5px;
+            display: none;
+        }
+        .screen-lock-status.active {
+            display: inline;
+            color: var(--status-green);
+        }
 
         .action-buttons button {
             background: #333;
@@ -369,7 +381,7 @@
             margin-bottom: 10px;
         }
         
-        /* Highlight toggle for Continuous Mode */
+        /* Toggle Switch UI */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -416,6 +428,7 @@
                         <div class="status-indicator">
                             <div class="status-dot" id="statusDot"></div>
                             <span id="connectionStatus">Key જરૂરી છે</span>
+                            <i class="fas fa-sun screen-lock-status" id="screenLockIcon" title="Screen Awake Active"></i>
                         </div>
                         <div class="action-buttons">
                             <button id="clearBtn" title="Chat Clear કરો"><i class="fas fa-trash"></i></button>
@@ -425,7 +438,7 @@
                     <div class="chat-messages" id="chatMessages">
                         <div class="message ai">
                             <div class="avatar"><i class="fas fa-robot"></i></div>
-                            <div class="message-content">નમસ્કાર! હું વિદુષી છું. સેટિંગ્સમાં "સતત વાતચીત" ચાલુ કરીને સીધી વાત કરી શકો છો.</div>
+                            <div class="message-content">નમસ્કાર! હું વિદુષી છું.</div>
                         </div>
                     </div>
                 </div>
@@ -444,7 +457,6 @@
                     </button>
                     
                     <div class="voice-visualizer" id="voiceVisualizer" style="height: 5px; margin-top: 10px; opacity: 0;">
-                        <!-- Simple visual filler -->
                         <div style="width: 100%; height: 2px; background: #444; border-radius: 2px;"></div>
                     </div>
                 </div>
@@ -468,16 +480,28 @@
 
                 <!-- Continuous Mode Toggle -->
                 <div class="setting-group" style="border: 1px solid #555; padding: 15px; border-radius: 8px; background: #252525;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <label for="continuousMode" style="margin: 0; color: #fff; font-weight: bold;">
-                            <i class="fas fa-comments"></i> સતત વાતચીત (Continuous Mode)
+                            <i class="fas fa-comments"></i> સતત વાતચીત (Continuous)
                         </label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="continuousMode">
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <p style="font-size: 12px; color: #aaa; margin-top: 5px;">ચાલુ રાખવાથી બોટ જવાબ આપ્યા પછી આપોઆપ સાંભળશે.</p>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #444; padding-top: 10px;">
+                        <label for="screenWakeLock" style="margin: 0; color: #ddd; font-size: 14px;">
+                            <i class="fas fa-sun"></i> સ્ક્રીન ચાલુ રાખો (Wake Lock)
+                        </label>
+                        <label class="toggle-switch" style="width: 40px; height: 20px;">
+                            <input type="checkbox" id="screenWakeLock" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p style="font-size: 11px; color: #aaa; margin-top: 5px;">
+                        નોંધ: સ્ક્રીન બંધ થવાથી વાતચીત અટકી જાય છે, તેથી આ ચાલુ રાખવું હિતાવહ છે.
+                    </p>
                 </div>
                 
                 <div class="setting-group">
@@ -535,7 +559,10 @@
                 this.speechSynthesis = window.speechSynthesis;
                 this.currentUtterance = null;
                 this.voices = [];
-                this.shouldContinueListening = false; // Flag for continuous mode loop
+                this.shouldContinueListening = false;
+                
+                // Wake Lock State
+                this.wakeLock = null;
 
                 this.initialize();
             }
@@ -545,19 +572,51 @@
                 this.setupEventListeners();
                 this.initializeSpeech();
                 
-                // Voice Loading
                 const loadVoices = () => {
                     this.voices = this.speechSynthesis.getVoices();
-                    console.log(`TTS Voices loaded: ${this.voices.length}`);
                 };
-                
                 if (this.speechSynthesis.onvoiceschanged !== undefined) {
                     this.speechSynthesis.onvoiceschanged = loadVoices;
                 }
-                setTimeout(loadVoices, 500); // Fallback
+                setTimeout(loadVoices, 500);
 
                 this.updateConnectionStatus(this.apiKey ? 'Ready' : 'Not Ready');
                 this.updateContinuousModeUI();
+                
+                // Re-acquire wake lock if visibility changes (user comes back to tab)
+                document.addEventListener('visibilitychange', async () => {
+                    if (this.wakeLock !== null && document.visibilityState === 'visible') {
+                        await this.activateWakeLock();
+                    }
+                });
+            }
+            
+            // --- Wake Lock API (Keep Screen On) ---
+            async activateWakeLock() {
+                if (!this.elements.screenWakeLock.checked) return;
+                
+                try {
+                    if ('wakeLock' in navigator) {
+                        this.wakeLock = await navigator.wakeLock.request('screen');
+                        this.elements.screenLockIcon.classList.add('active');
+                        // console.log('Wake Lock active');
+                    }
+                } catch (err) {
+                    console.error('Wake Lock failed:', err);
+                }
+            }
+
+            async deactivateWakeLock() {
+                if (this.wakeLock !== null) {
+                    try {
+                        await this.wakeLock.release();
+                        this.wakeLock = null;
+                        this.elements.screenLockIcon.classList.remove('active');
+                        // console.log('Wake Lock released');
+                    } catch (err) {
+                        console.error('Wake Lock release failed:', err);
+                    }
+                }
             }
             
             // --- UI & State Methods ---
@@ -568,8 +627,11 @@
                 this.elements.voice.value = localStorage.getItem('geminiVoiceType') || 'female';
                 this.elements.autoSpeak.checked = localStorage.getItem('geminiAutoSpeak') === 'false' ? false : true;
                 
-                // Load Continuous Mode Setting
                 this.elements.continuousMode.checked = localStorage.getItem('geminiContinuousMode') === 'true';
+                
+                // Default Wake Lock to true if not set
+                const wakeLockSetting = localStorage.getItem('geminiScreenWakeLock');
+                this.elements.screenWakeLock.checked = wakeLockSetting === null ? true : (wakeLockSetting === 'true');
 
                 if (this.apiKey) {
                     this.elements.apiKey.value = '•'.repeat(32);
@@ -588,6 +650,7 @@
                 localStorage.setItem('geminiVoiceType', this.elements.voice.value);
                 localStorage.setItem('geminiAutoSpeak', this.elements.autoSpeak.checked);
                 localStorage.setItem('geminiContinuousMode', this.elements.continuousMode.checked);
+                localStorage.setItem('geminiScreenWakeLock', this.elements.screenWakeLock.checked);
                 
                 this.updateContinuousModeUI();
             }
@@ -642,12 +705,11 @@
                 console.log(`[${type}]: ${message}`);
             }
 
-
-            // --- Speech Recognition (Input) ---
+            // --- Speech Recognition ---
             initializeSpeech() {
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                     this.recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
-                    this.recognition.continuous = false; // We handle loop manually
+                    this.recognition.continuous = false;
                     this.recognition.interimResults = false;
                     this.recognition.maxAlternatives = 1;
                     this.recognition.lang = this.elements.language.value;
@@ -657,7 +719,6 @@
                     this.recognition.onerror = (event) => this.handleRecognitionError(event);
                     this.recognition.onend = () => {
                         this.stopListeningUI();
-                        // Note: Restart logic is handled in SpeakText onend, not here, to avoid conflict
                     };
                 }
             }
@@ -682,8 +743,8 @@
                         if (this.elements.autoSpeak.checked) {
                             this.speakText(responseText);
                         } else {
-                            // If auto-speak is off, but continuous mode is on, we should just listen again
                             this.isProcessing = false;
+                            // Check continuous loop if auto-speak is OFF
                             if (this.elements.continuousMode.checked && this.shouldContinueListening) {
                                 setTimeout(() => this.toggleListening(true), 1000);
                             } else {
@@ -697,7 +758,7 @@
                     this.addMessage(`Error: API માં ભૂલ આવી.`, 'ai');
                     this.updateConnectionStatus('Failed');
                     this.isProcessing = false;
-                    this.shouldContinueListening = false; // Stop loop on error
+                    this.shouldContinueListening = false;
                 }
             }
 
@@ -720,14 +781,16 @@
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
             }
 
-            // --- Speech Synthesis (Output) ---
+            // --- Speech Synthesis ---
             speakText(text) {
                 if (!this.speechSynthesis) return;
                 if (this.currentUtterance) this.speechSynthesis.cancel();
+                
+                // Keep screen awake during speech
+                this.activateWakeLock();
 
                 this.updateConnectionStatus('Speaking');
                 
-                // Clean text logic
                 let cleanText = text.replace(/[*#_`~>\[\]()]/g, ""); 
                 cleanText = cleanText.replace(/https?:\/\/\S+/g, " લિંક ");
                 cleanText = cleanText.replace(/\s+/g, " ").trim();
@@ -744,29 +807,28 @@
                     utterance.voice = selectedVoice;
                 }
                 
-                // --- CONTINUOUS MODE LOGIC HERE ---
                 utterance.onend = () => {
                     this.currentUtterance = null;
                     this.isProcessing = false;
 
-                    // If user hit STOP, shouldContinueListening will be false
                     if (this.elements.continuousMode.checked && this.shouldContinueListening) {
-                        // Small delay to ensure mic doesn't catch end of bot speech
                         this.updateConnectionStatus('Ready', 'ફરી સાંભળું છું...');
                         setTimeout(() => {
-                            if (this.shouldContinueListening) { // Double check
+                            if (this.shouldContinueListening) {
                                 this.toggleListening(true);
                             }
                         }, 500);
                     } else {
                         this.updateConnectionStatus('Ready');
-                        this.shouldContinueListening = false; // Reset
+                        this.shouldContinueListening = false;
+                        this.deactivateWakeLock(); // Release lock if stopped
                     }
                 };
 
                 utterance.onerror = (e) => {
                     console.error('Speech Error:', e);
                     this.isProcessing = false;
+                    this.deactivateWakeLock();
                 };
 
                 this.currentUtterance = utterance;
@@ -775,12 +837,11 @@
             
             // --- Event Handlers ---
             setupEventListeners() {
-                // Main Mic Button
                 this.elements.voiceBtn.addEventListener('click', () => {
                     if (this.isListening) {
-                        this.stopAllProcesses(); // Click while listening = Stop
+                        this.stopAllProcesses();
                     } else {
-                        this.shouldContinueListening = true; // Enable loop
+                        this.shouldContinueListening = true;
                         this.toggleListening(true);
                     }
                 });
@@ -799,7 +860,7 @@
                     this.saveSettings();
                 });
                 
-                ['language', 'voice', 'autoSpeak', 'continuousMode'].forEach(id => {
+                ['language', 'voice', 'autoSpeak', 'continuousMode', 'screenWakeLock'].forEach(id => {
                     this.elements[id].addEventListener('change', () => this.saveSettings());
                 });
 
@@ -821,24 +882,17 @@
             handleRecognitionResult(event) {
                 const transcript = event.results[0][0].transcript;
                 this.addMessage(transcript, 'user');
-                // Don't stop loop here, processWithGemini will handle next steps
                 this.processWithGemini(transcript);
             }
             
             handleRecognitionError(event) {
                 console.error('Recognition error:', event.error);
-                if (event.error === 'no-speech') {
-                    // In continuous mode, if no speech, maybe try again or stop?
-                    // Usually better to stop to avoid infinite loop of "listening..."
-                    this.showNotification('કોઈ અવાજ મળ્યો નથી', 'warning');
-                }
                 this.stopListeningUI();
                 
                 if(event.error === 'no-speech' && this.elements.continuousMode.checked && this.shouldContinueListening) {
-                     // Optional: Retry once more if in continuous mode? 
-                     // For now, let's stop to prevent annoyance.
                      this.shouldContinueListening = false;
                      this.updateConnectionStatus('Ready', 'કોઈ અવાજ નહીં - મોડ બંધ');
+                     this.deactivateWakeLock();
                 }
             }
 
@@ -855,12 +909,13 @@
             }
 
             stopAllProcesses() {
-                this.shouldContinueListening = false; // KILL THE LOOP
+                this.shouldContinueListening = false;
                 if (this.speechSynthesis.speaking) this.speechSynthesis.cancel();
                 if (this.recognition) this.recognition.stop();
                 this.removeTypingIndicator();
                 this.stopListeningUI();
                 this.isProcessing = false;
+                this.deactivateWakeLock(); // Release screen lock
                 this.updateConnectionStatus('Ready', 'વાતચીત બંધ કરી');
             }
 
@@ -898,6 +953,7 @@
                 this.isListening = true;
                 this.elements.voiceBtn.classList.add('listening');
                 this.updateConnectionStatus('Listening');
+                this.activateWakeLock(); // Keep screen on while listening
             }
 
             stopListeningUI() {
@@ -909,7 +965,6 @@
                 if (!this.apiKey) { this.showNotification('API Key જરૂરી છે', 'error'); return; }
                 if (!this.recognition) return;
                 
-                // If forcing start (from auto-loop), ignore current state check
                 if (forceStart) {
                     this.recognition.lang = this.elements.language.value;
                     try { this.recognition.start(); } catch (e) { console.log('Already started'); }
@@ -918,7 +973,7 @@
 
                 if (this.isListening) {
                     this.recognition.stop();
-                    this.shouldContinueListening = false; // User manually stopped
+                    this.shouldContinueListening = false;
                 } else {
                     this.recognition.lang = this.elements.language.value;
                     try { this.recognition.start(); } catch (e) { console.error(e); }
@@ -929,7 +984,6 @@
                 if (!this.apiKey) return;
                 this.updateConnectionStatus('Testing');
                 try {
-                    // Simple test
                     await this.callGeminiAPI("Hello");
                     this.updateConnectionStatus('Connected');
                     this.showNotification('API Connected', 'success');
