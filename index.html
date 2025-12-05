@@ -1,1063 +1,265 @@
 <!DOCTYPE html>
 <html lang="gu">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>વિદુષી - AI Assistant</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            /* Black and White Palette */
-            --primary: #000000; /* Black */
-            --secondary: #1a1a1a; /* Dark Gray */
-            --accent: #ffffff; /* White */
-            --light: #f0f0f0; /* Off-White/Light Gray */
-            --dark: #000000;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        
-        body {
-            background-color: var(--dark);
-            min-height: 100vh;
-            color: var(--light);
-            overflow-x: hidden;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Minimal Background (Just pure black) */
-        .bg-animation { display: none; }
-        
-        /* Page Navigation */
-        .page {
-            display: none;
-            animation: fadeIn 0.6s ease;
-            width: 100%;
-        }
-        
-        .page.active {
-            display: flex;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Home Page - Minimal Style */
-        #homePage {
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .ai-container {
-            text-align: center;
-            z-index: 10;
-            width: 100%;
-            max-width: 400px; 
-        }
-        
-        /* Minimal AI Logo (Hidden) */
-        .ai-logo { display: none; }
-        
-        .ai-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 50px; 
-            color: var(--light);
-        }
-        
-        .ai-subtitle {
-            display: none; 
-        }
-        
-        /* Minimal Mic Interface */
-        .voice-interface {
-            position: relative;
-            margin-bottom: 50px;
-        }
-        
-        .voice-circle {
-            width: 100px; 
-            height: 100px;
-            border-radius: 50%;
-            background: var(--secondary);
-            border: 2px solid var(--light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-        }
-        
-        .voice-circle:hover {
-            background: var(--light);
-            color: var(--primary);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
-        }
-        
-        .voice-circle.listening {
-            animation: pulse-ring 1.5s infinite;
-            background: var(--light);
-        }
-        
-        @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
-            70% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-        }
-        
-        .mic-icon {
-            font-size: 40px;
-            color: var(--light);
-            transition: all 0.3s ease;
-        }
-
-        .voice-circle:hover .mic-icon,
-        .voice-circle.listening .mic-icon {
-            color: var(--primary);
-        }
-        
-        .voice-circle.listening .mic-icon {
-            animation: mic-pulse 1.2s ease-in-out infinite;
-        }
-        
-        .sound-waves { display: none; } 
-        
-        .voice-status {
-            font-size: 1rem;
-            color: var(--light);
-            margin-top: 25px;
-            min-height: 20px;
-            font-weight: 400;
-            /* Added animation for thinking/speaking status */
-            animation: status-glow 1.5s infinite alternate;
-        }
-        
-        @keyframes status-glow {
-            from { opacity: 0.9; }
-            to { opacity: 0.6; }
-        }
-        
-        .quick-actions {
-            display: none;
-        }
-        
-        /* Settings Page - Minimal */
-        #settingsPage {
-            min-height: 100vh;
-            padding: 20px;
-            align-items: center;
-        }
-        
-        .settings-container {
-            max-width: 400px;
-            width: 100%;
-            background: var(--secondary);
-            border: 1px solid var(--light);
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.1);
-        }
-        
-        .settings-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .settings-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: var(--light);
-        }
-        
-        .setting-group {
-            margin-bottom: 25px;
-        }
-        
-        .setting-group label {
-            display: block;
-            margin-bottom: 10px;
-            color: var(--light);
-            font-weight: 500;
-            font-size: 15px;
-        }
-        
-        .setting-group input,
-        .setting-group select {
-            width: 100%;
-            padding: 12px;
-            background: var(--primary);
-            border: 1px solid var(--light);
-            border-radius: 5px;
-            color: var(--light);
-            font-size: 15px;
-            transition: all 0.3s ease;
-        }
-        
-        .setting-group input:focus,
-        .setting-group select:focus {
-            outline: none;
-            border-color: var(--light);
-            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-        }
-        
-        .api-input-group {
-            position: relative;
-        }
-        
-        .toggle-password {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--light);
-            opacity: 0.6;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        .model-selector {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .model-card {
-            padding: 15px;
-            background: var(--primary);
-            border: 1px solid var(--light);
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-        
-        .model-card:hover {
-            background: #2a2a2a;
-        }
-        
-        .model-card.active {
-            background: var(--light);
-            color: var(--primary);
-            border-color: var(--light);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-        
-        .model-card.active .model-icon {
-            color: var(--primary);
-        }
-        
-        .model-icon {
-            font-size: 20px;
-            margin: 0 auto 5px;
-            color: var(--light);
-        }
-        
-        .model-name {
-            font-size: 14px;
-            font-weight: 700;
-            color: inherit;
-        }
-        
-        .model-description {
-            display: none; 
-        }
-        
-        /* Minimal Buttons */
-        .btn {
-            padding: 15px;
-            background: var(--light);
-            border: none;
-            border-radius: 5px;
-            color: var(--primary);
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 16px;
-        }
-        
-        .btn:hover {
-            background: var(--secondary);
-            color: var(--light);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-        }
-        
-        .btn-secondary {
-            background: var(--primary);
-            border: 1px solid var(--light);
-            color: var(--light);
-        }
-        
-        .btn-secondary:hover {
-            background: var(--light);
-            color: var(--primary);
-        }
-
-        /* Settings Quick Actions (Moved here) */
-        .settings-actions {
-            display: flex;
-            flex-direction: column; 
-            gap: 10px;
-            margin-top: 25px;
-            margin-bottom: 25px;
-            padding-top: 15px;
-            border-top: 1px solid #333;
-        }
-        
-        /* Navigation */
-        .nav-btn {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            width: 40px;
-            height: 40px;
-            background: var(--secondary);
-            border: 1px solid var(--light);
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--light);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            z-index: 1000;
-            font-size: 18px;
-            pointer-events: auto; 
-        }
-        
-        .nav-btn:hover {
-            background: var(--light);
-            color: var(--primary);
-            transform: rotate(10deg);
-        }
-        
-        .back-btn:hover {
-            transform: rotate(-10deg);
-        }
-        
-        /* Status Messages */
-        .status-message {
-            padding: 10px 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
-            text-align: center;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .status-message.success {
-            background: #2a2a2a;
-            border: 1px solid #6bcf7f;
-            color: #6bcf7f;
-        }
-        
-        .status-message.error {
-            background: #2a2a2a;
-            border: 1px solid #e34c4c;
-            color: #e34c4c;
-        }
-        
-        /* Info Box */
-        .info-box {
-            background: var(--primary);
-            border: 1px solid var(--light);
-            border-radius: 5px;
-            padding: 15px;
-            margin-top: 15px;
-            font-size: 13px;
-            color: var(--light);
-            line-height: 1.5;
-        }
-        
-        .info-box a {
-            color: var(--light);
-            text-decoration: underline;
-            font-weight: 600;
-        }
-
-        /* Mobile specific adjustments */
-        @media (max-width: 450px) {
-             .ai-title { font-size: 2rem; }
-             .voice-circle { width: 80px; height: 80px; }
-             .mic-icon { font-size: 30px; }
-             .voice-status { font-size: 0.9rem; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gujarati Chatbot — Instant Reply (Single File)</title>
+  <style>
+    :root {
+      --bg: #faf7f2;
+      --card: #ffffff;
+      --text: #1b1b1b;
+      --accent: #0f766e;
+      --accent-2: #075985;
+      --muted: #6b7280;
+      --bot: #fff5e6;
+      --user: #e6fff2;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Sans Gujarati", "Noto Sans", system-ui, -apple-system, Arial, sans-serif;
+    }
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+    }
+    header .title { font-size: 18px; font-weight: 700; }
+    header .subtitle { font-size: 13px; color: var(--muted); }
+    .chat {
+      padding: 12px;
+      overflow-y: auto;
+    }
+    .msg {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 8px;
+      margin: 8px 0;
+      align-items: start;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: grid; place-items: center; font-weight: 700;
+      color: #fff;
+    }
+    .avatar.bot { background: var(--accent); }
+    .avatar.user { background: var(--accent-2); }
+    .bubble {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      line-height: 1.5;
+    }
+    .bubble.bot { background: var(--bot); }
+    .bubble.user { background: var(--user); }
+    .time {
+      font-size: 11px; color: var(--muted); margin-top: 6px;
+    }
+    .input {
+      position: sticky; bottom: 0; z-index: 10;
+      background: var(--card); border-top: 1px solid var(--border);
+      padding: 10px;
+    }
+    .row {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px;
+    }
+    textarea {
+      width: 100%; resize: none; min-height: 44px; max-height: 120px;
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+      outline: none; font-size: 15px; line-height: 1.4; background: #fff;
+    }
+    button {
+      padding: 0 16px; border: none; border-radius: 10px; height: 44px;
+      background: var(--accent); color: #fff; font-weight: 700; cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .actions { display: flex; gap: 8px; margin-top: 8px; }
+    .secondary {
+      background: #f3f4f6; color: #111827; border: 1px solid var(--border);
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body>
-    <!-- 
-        Navigation buttons are handled by addEventListeners in JS.
-    -->
-    
-    <!-- Navigation Buttons -->
-    <button class="nav-btn" id="settingsBtn" title="Settings">
-        <i class="fas fa-cog"></i>
-    </button>
-    <button class="nav-btn back-btn" id="backBtn" title="Back" style="display: none;">
-        <i class="fas fa-arrow-left"></i>
-    </button>
+  <div class="app">
+    <header>
+      <div class="title">ગુજરાતી ચેટબોટ</div>
+      <div class="subtitle">Instant reply • Single-file • No artificial delay</div>
+    </header>
 
-    <!-- Home Page -->
-    <div id="homePage" class="page active">
-        <div class="ai-container">
-            
-            <h1 class="ai-title">વિદુષી</h1>
-            
-            <div class="voice-interface">
-                <div class="voice-circle" id="voiceBtn">
-                    <i class="fas fa-microphone mic-icon"></i>
-                </div>
-                <div class="voice-status" id="voiceStatus">વિદુષી સાથે વાત કરવા માટે ટેપ કરો</div>
-            </div>
-            
-        </div>
-    </div>
-    
-    <!-- Settings Page -->
-    <div id="settingsPage" class="page">
-        <div class="settings-container">
-            <div class="settings-header">
-                <h2 class="settings-title">સેટિંગ્સ</h2>
-                <p style="color: var(--light); opacity: 0.7;">તમારા AI સહાયકને ગોઠવો</p>
-            </div>
-            
-            <div id="statusMessage" class="status-message"></div>
-            
-            <div class="setting-group">
-                <label for="apiKey">
-                    <i class="fas fa-key"></i> Gemini API કી
-                </label>
-                <div class="api-input-group">
-                    <input type="password" id="apiKey" placeholder="તમારી Gemini API કી દાખલ કરો">
-                    <button type="button" class="toggle-password" id="toggleApiKey">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-                <button class="btn" id="saveApiKey" style="width: 100%; margin-top: 10px;">
-                    <i class="fas fa-save"></i> API કી સેવ કરો
-                </button>
-            </div>
-            
-            <div class="setting-group">
-                <label><i class="fas fa-brain"></i> AI મોડેલ</label>
-                <div class="model-selector">
-                    <div class="model-card active" data-model="gemini-2.5-flash">
-                        <div class="model-icon">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div class="model-name">Flash (ઝડપી)</div>
-                    </div>
-                    <div class="model-card" data-model="gemini-1.5-pro">
-                        <div class="model-icon">
-                            <i class="fas fa-rocket"></i>
-                        </div>
-                        <div class="model-name">Pro (ગુણવત્તા)</div>
-                    </div>
-                </div>
-                <div class="info-box" style="margin-top: 10px;">
-                    ઝડપી જવાબો માટે 'Flash' મોડેલ પસંદ કરો. (આ ડિફોલ્ટ સેટ છે.)
-                </div>
-            </div>
-            
-            <div class="setting-group">
-                <label for="language"><i class="fas fa-language"></i> ભાષા</label>
-                <select id="language">
-                    <option value="gu-IN">Gujarati (ગુજરાતી)</option>
-                    <option value="hi-IN">Hindi (हिंदी)</option>
-                    <option value="en-US">English</option>
-                    <option value="mr-IN">Marathi (મરાઠી)</option>
-                </select>
-            </div>
-            
-            <div class="setting-group">
-                <label for="voice"><i class="fas fa-microphone"></i> અવાજ પ્રકાર</label>
-                <select id="voice">
-                    <option value="female">સ્ત્રી અવાજ</option>
-                    <option value="male">પુરુષ અવાજ</option>
-                </select>
-            </div>
-            
-            <div class="setting-group">
-                <label for="speechRate"><i class="fas fa-tachometer-alt"></i> બોલવાની ગતિ</label>
-                <input type="range" id="speechRate" min="0.7" max="1.5" step="0.1" value="1">
-                <div style="text-align: center; margin-top: 5px; color: var(--light); opacity: 0.7;">
-                    <span id="rateValue">1.0x</span>
-                </div>
-            </div>
-            
-            <div class="checkbox-group">
-                <input type="checkbox" id="autoSpeak" checked>
-                <label for="autoSpeak">જવાબો આપોઆપ બોલો</label>
-            </div>
-            
-            <!-- Quick Actions Moved to Settings Page -->
-            <div class="settings-actions">
-                <button class="btn btn-secondary" id="testVoiceBtn">
-                    <i class="fas fa-play"></i> અવાજ ચકાસો
-                </button>
-                <button class="btn btn-secondary" id="testApiBtn">
-                    <i class="fas fa-bolt"></i> API ચકાસો
-                </button>
-            </div>
-            
-            <div class="info-box">
-                <strong>મફત API કી મેળવો:</strong><br>
-                1. <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a> પર જાઓ<br>
-                2. "Create API Key" પર ક્લિક કરો<br>
-                3. કી કોપી કરો (AIza... થી શરૂ થાય છે)
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 30px;">
-                <button class="btn" id="saveSettings" style="flex: 1;">
-                    <i class="fas fa-save"></i> સેવ કરો
-                </button>
-                <button class="btn btn-secondary" id="resetSettings" style="flex: 1;">
-                    <i class="fas fa-undo"></i> રીસેટ કરો
-                </button>
-            </div>
-        </div>
-    </div>
+    <main id="chat" class="chat" aria-live="polite"></main>
 
-    <script>
-        class VidushiAI {
-            constructor() {
-                this.initializeElements();
-                this.initializeState();
-                this.setupEventListeners();
-                this.initializeSpeech();
-                this.loadSettings();
-                this.mood = 'ready'; 
-                this.responsePatterns = {
-                    ready: ['✨', '😊'],
-                    speaking: ['🗣️', '💬'],
-                    thinking: ['🤔', '💭'],
-                    listening: ['🎤'],
-                    error: ['❌', '😥']
-                };
-                this.initialGreetingDone = false;
-                // Trigger initial greeting when ready
-                this.initialGreeting();
-            }
-            
-            initializeElements() {
-                // Safely get all elements, allowing for null if DOM is not ready
-                this.homePage = document.getElementById('homePage');
-                this.settingsPage = document.getElementById('settingsPage');
-                this.settingsBtn = document.getElementById('settingsBtn');
-                this.backBtn = document.getElementById('backBtn');
-                this.voiceBtn = document.getElementById('voiceBtn');
-                this.voiceStatus = document.getElementById('voiceStatus');
-                this.testVoiceBtn = document.getElementById('testVoiceBtn');
-                this.testApiBtn = document.getElementById('testApiBtn');
-                this.apiKeyInput = document.getElementById('apiKey');
-                this.toggleApiKeyBtn = document.getElementById('toggleApiKey');
-                this.saveApiKeyBtn = document.getElementById('saveApiKey');
-                this.languageSelect = document.getElementById('language');
-                this.voiceSelect = document.getElementById('voice');
-                this.speechRate = document.getElementById('speechRate');
-                this.rateValue = document.getElementById('rateValue');
-                this.autoSpeak = document.getElementById('autoSpeak');
-                this.modelCards = document.querySelectorAll('.model-card');
-                this.saveSettingsBtn = document.getElementById('saveSettings');
-                this.resetSettingsBtn = document.getElementById('resetSettings');
-                this.statusMessage = document.getElementById('statusMessage');
-                
-                this.recognition = null;
-                this.speechSynthesis = window.speechSynthesis;
-                this.isListening = false;
-                this.isProcessing = false;
-                this.availableVoices = [];
-                
-                this.loadSpeechVoices();
-            }
-            
-            showHomePage() {
-                if (this.homePage && this.homePage.classList.contains('active')) return;
-                if (this.homePage) this.homePage.classList.add('active');
-                if (this.settingsPage) this.settingsPage.classList.remove('active');
-                if (this.settingsBtn) this.settingsBtn.style.display = 'flex';
-                if (this.backBtn) this.backBtn.style.display = 'none';
-                if (!this.initialGreetingDone) {
-                    this.initialGreeting();
-                }
-            }
-            
-            showSettingsPage() {
-                if (this.settingsPage && this.settingsPage.classList.contains('active')) return;
-                if (this.homePage) this.homePage.classList.remove('active');
-                if (this.settingsPage) this.settingsPage.classList.add('active');
-                if (this.settingsBtn) this.settingsBtn.style.display = 'none';
-                if (this.backBtn) this.backBtn.style.display = 'flex';
-            }
-            
-            initializeState() {
-                this.apiKey = localStorage.getItem('geminiApiKey') || null;
-                const savedSettings = localStorage.getItem('geminiSettings');
-                if (savedSettings) {
-                    const settings = JSON.parse(savedSettings);
-                    this.language = settings.language || 'gu-IN';
-                    this.voiceType = settings.voice || 'female';
-                    this.speechRateValue = settings.speechRate || 1;
-                    this.autoSpeakEnabled = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-2.5-flash';
-                } else {
-                    this.language = 'gu-IN';
-                    this.voiceType = 'female';
-                    this.speechRateValue = 1;
-                    this.autoSpeakEnabled = true;
-                    this.currentModel = 'gemini-2.5-flash';
-                }
-            }
-            
-            initializeSpeech() {
-                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                    this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                    this.setupRecognition();
-                } else {
-                    if (this.voiceBtn) this.voiceBtn.style.opacity = '0.5';
-                    if (this.voiceBtn) this.voiceBtn.style.cursor = 'not-allowed';
-                    if (this.voiceStatus) this.voiceStatus.textContent = 'Speech recognition not supported';
-                }
-                if (!this.speechSynthesis) {
-                    if (this.testVoiceBtn) this.testVoiceBtn.disabled = true;
-                }
-            }
-            
-            setupRecognition() {
-                this.recognition.continuous = false;
-                this.recognition.interimResults = false;
-                this.recognition.lang = this.language;
-                
-                this.recognition.onstart = () => {
-                    this.isListening = true;
-                    if (this.voiceBtn) this.voiceBtn.classList.add('listening');
-                    this.updateMood('listening');
-                    if (this.voiceStatus) this.voiceStatus.textContent = '🎤 સાંભળી રહી છું...';
-                };
-                
-                this.recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    this.processUserInput(transcript);
-                };
-                
-                this.recognition.onerror = (event) => {
-                    console.error('Speech recognition error:', event.error);
-                    this.stopListening();
-                    if (event.error === 'not-allowed') {
-                        this.showNotification('માઇક્રોફોનની પરવાનગી જરૂરી છે.', 'error');
-                    }
-                };
-                
-                this.recognition.onend = () => this.stopListening();
-            }
-            
-            setupEventListeners() {
-                // *** CRITICAL FIX: Attach navigation listeners directly here using safe checks ***
-                if (this.settingsBtn) this.settingsBtn.addEventListener('click', () => this.showSettingsPage());
-                if (this.backBtn) this.backBtn.addEventListener('click', () => this.showHomePage());
+    <section class="input">
+      <div class="row">
+        <textarea id="msg" placeholder="તમારો પ્રશ્ન લખો…" autocomplete="off"></textarea>
+        <button id="send">મોકલો</button>
+      </div>
+      <div class="actions">
+        <button class="secondary" id="clear">સાફ કરો</button>
+        <button class="secondary" id="export">Export JSON</button>
+      </div>
+    </section>
+  </div>
 
-                if (this.voiceBtn) this.voiceBtn.addEventListener('click', () => this.toggleListening());
-                if (this.testVoiceBtn) this.testVoiceBtn.addEventListener('click', () => this.testVoice());
-                if (this.testApiBtn) this.testApiBtn.addEventListener('click', () => this.testApiConnection());
-                this.setupSettingsListeners();
-            }
-            
-            setupSettingsListeners() {
-                if (this.toggleApiKeyBtn) this.toggleApiKeyBtn.addEventListener('click', () => {
-                    if (this.apiKeyInput) {
-                        const type = this.apiKeyInput.type === 'password' ? 'text' : 'password';
-                        this.apiKeyInput.type = type;
-                        this.toggleApiKeyBtn.innerHTML = type === 'password' ? 
-                            '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-                    }
-                });
-                
-                if (this.saveApiKeyBtn) this.saveApiKeyBtn.addEventListener('click', () => this.saveApiKey());
-                this.modelCards.forEach(card => {
-                    card.addEventListener('click', () => {
-                        this.modelCards.forEach(c => c.classList.remove('active'));
-                        card.classList.add('active');
-                        this.currentModel = card.dataset.model;
-                    });
-                });
-                if (this.speechRate) this.speechRate.addEventListener('input', () => {
-                    if (this.rateValue) this.rateValue.textContent = this.speechRate.value + 'x';
-                });
-                if (this.saveSettingsBtn) this.saveSettingsBtn.addEventListener('click', () => this.saveAllSettings());
-                if (this.resetSettingsBtn) this.resetSettingsBtn.addEventListener('click', () => this.resetSettings());
-            }
-            
-            loadSpeechVoices() {
-                const loadVoices = () => {
-                    this.availableVoices = this.speechSynthesis.getVoices();
-                    if (this.availableVoices.length === 0) {
-                        setTimeout(loadVoices, 100);
-                    }
-                };
-                if (this.speechSynthesis.getVoices().length === 0) {
-                    this.speechSynthesis.addEventListener('voiceschanged', loadVoices);
-                } else {
-                    loadVoices();
-                }
-            }
-            
-            toggleListening() {
-                if (!this.recognition) return;
-                if (!this.apiKey) {
-                    this.showNotification('કૃપા કરીને પહેલા તમારી API કી ઉમેરો', 'error');
-                    return;
-                }
-                if (this.isListening) {
-                    this.recognition.stop();
-                } else {
-                    try {
-                        this.recognition.lang = this.language;
-                        this.recognition.start();
-                    } catch (error) {
-                        console.error('Recognition start error:', error);
-                    }
-                }
-            }
-            
-            stopListening() {
-                this.isListening = false;
-                if (this.voiceBtn) this.voiceBtn.classList.remove('listening');
-                this.updateMood('ready');
-                if (!this.isProcessing && !this.speechSynthesis.speaking && this.voiceStatus) {
-                    this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો';
-                }
-                if (this.recognition && this.recognition.stop) {
-                    try { this.recognition.stop(); } catch (e) {}
-                }
-            }
-            
-            updateMood(newMood) {
-                this.mood = newMood;
-                const micIcon = document.querySelector('.mic-icon');
-                if (micIcon) {
-                    if (newMood === 'ready') {
-                        micIcon.style.color = 'var(--light)';
-                    } else {
-                        micIcon.style.color = 'var(--primary)';
-                    }
-                }
-            }
-            
-            getRandomEmoji(mood) {
-                const emojis = this.responsePatterns[mood] || this.responsePatterns.ready;
-                return emojis[Math.floor(Math.random() * emojis.length)];
-            }
+  <script>
+    // ——— Instant engine: no delays, no unnecessary await ———
 
-            initialGreeting() {
-                if (this.initialGreetingDone || this.speechSynthesis.speaking) return;
+    // Basic local Q&A (you can extend; remains instant)
+    const QA = [
+      { q: "રામાયણ", a: "રામાયણમાં મુખ્યત્વે શ્રીરામનું જીવન, અયોધ્યા, વનવાસ, સીતાહરણ અને રાવણ વિધ્વંસ વર્ણવાય છે." },
+      { q: "મહાભારત", a: "મહાભારતમાં કુરુક્ષેત્ર યુદ્ધ, પાંડવ-કૌરવ વિવાદ, ધર્મ-અધર્મનો સંઘર્ષ અને ભાગવદ ગીતા સમાવેશ થાય છે." },
+      { q: "ગીતા", a: "ભગવદ ગીતા અર્જુનને શ્રીકૃષ્ણ દ્વારા સંભળાવેલ ધર્મ-કર્મ-યોગનો સાર છે." },
+      { q: "ધર્મ", a: "ધર્મ એટલે કર્તવ્યભાવથી યોગ્ય કર્મ કરવો, અંતરમાં સત્ય-અહિંસાનું પાલન રાખવું." },
+      { q: "યોગ", a: "યોગ અર્થાત્ મન-બુદ્ધિ-ઇન્દ્રિયોને સંયમમાં રાખી આત્મસાધના કરવી." }
+    ];
 
-                const greeting = "જય શ્રી કૃષ્ણ. હું વિદુષી છું. મને આશા છે કે તમે મજામાં હશો.";
-                this.speakTextNatural(greeting, true); // true to mark as greeting
-            }
-            
-            async processUserInput(text) {
-                if (!text.trim()) return;
-                if (this.isProcessing) return;
-                
-                // 'બંધ' કમાન્ડ
-                if (text.toLowerCase().includes('બંધ')) {
-                    if (this.speechSynthesis.speaking) {
-                        this.speechSynthesis.cancel();
-                        if (this.voiceStatus) this.voiceStatus.textContent = '🔇 બોલવાનું બંધ કર્યું';
-                        this.updateMood('ready');
-                    }
-                    this.isProcessing = false;
-                    setTimeout(() => { if (this.voiceStatus) this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો'; }, 3000);
-                    return;
-                }
-                
-                this.isProcessing = true;
-                if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('thinking') + ' વિચારી રહી છું...';
-                
-                try {
-                    const response = await this.callGeminiAPI(text);
-                    
-                    if (response && this.autoSpeakEnabled) {
-                        // Display the response text immediately before speaking starts (streaming effect)
-                        if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' ' + response;
-                        this.speakTextNatural(response);
-                    } else if (response) {
-                        if (this.voiceStatus) this.voiceStatus.textContent = '✅ જવાબ મળ્યો: ' + response.substring(0, 30) + '...';
-                    }
-                } catch (error) {
-                    console.error('Gemini API error:', error);
-                    if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('error') + ' ભૂલ: API નિષ્ફળ';
-                    this.updateMood('error');
-                    this.showNotification('API ભૂલ આવી. સેટિંગ્સ તપાસો.', 'error');
-                } finally {
-                    this.isProcessing = false;
-                    // Note: Status reset handled by speakTextNatural on end
-                }
-            }
-            
-            async callGeminiAPI(userMessage) {
-                if (!this.apiKey) throw new Error("API Key not set.");
+    // Normalize for quick compare
+    const normalize = (s) => s
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-                // Use the selected model from settings
-                const modelName = this.currentModel || 'gemini-2.5-flash';
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
-                
-                // *** સિસ્ટમ સૂચના ***
-                const coreInstruction = "તમારું નામ વિદુષી છે અને તમારું સર્જન દેવેન્દ્રભાઈએ કર્યું છે. તમારે આ હકીકત હંમેશા યાદ રાખવાની છે. સામાન્ય પ્રશ્નોના ટૂંકા, સીધા જવાબ આપો. ફક્ત ત્યારે જ વિસ્તૃત માહિતી આપો જો તે ખૂબ જ જરૂરી હોય. તમારો સ્વર નમ્ર, સામાન્ય અને બહુ ભાવુક ન હોય તેવો રાખો. માત્ર ગુજરાતીમાં જ જવાબ આપો. User Query: ";
-                
-                const requestBody = {
-                    contents: [
-                        { 
-                            role: "user",
-                            parts: [{ text: `જય શ્રી કૃષ્ણ. ${coreInstruction} ${userMessage}` }]
-                        }
-                    ],
-                    generationConfig: {
-                        // CRITICAL FIX: Lowering temperature for stable, fast response
-                        temperature: 0.1, 
-                        // CRITICAL FIX: Further reducing tokens for rapid, concise answers
-                        maxOutputTokens: 150, 
-                    }
-                };
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
-                }
-                
-                const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text;
-            }
-            
-            sanitizeTextForSpeech(text) {
-                let cleanedText = text.replace(/[\,;\:\-—\(\)\[\]\{\}\"\'\/\@\#\$\%\^\&\*\+\=\<\>]/g, ' '); 
-                cleanedText = cleanedText.replace(/।/g, ' '); 
-                cleanedText = cleanedText.replace(/\s+/g, ' '); 
-                return cleanedText.trim();
-            }
-            
-            speakTextNatural(text, isGreeting = false) {
-                if (!this.speechSynthesis) return;
-                if (this.speechSynthesis.speaking) this.speechSynthesis.cancel();
-                
-                const sentences = text.split(/[.!?\n]+/).filter(s => s.trim().length > 0);
-                
-                const voices = this.speechSynthesis.getVoices();
-                let selectedVoice = voices.find(v => v.lang === this.language && v.name.toLowerCase().includes('female'));
-                if (!selectedVoice) selectedVoice = voices.find(v => v.lang === this.language);
-                if (!selectedVoice && this.voiceType === 'female') selectedVoice = voices.find(v => v.name.toLowerCase().includes('female'));
-                if (!selectedVoice) selectedVoice = voices[0];
-                
-                let sentenceIndex = 0;
-                const speakNextSentence = () => {
-                    if (sentenceIndex >= sentences.length) {
-                        this.updateMood('ready');
-                        if (this.voiceStatus) this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો';
-                        if (isGreeting) this.initialGreetingDone = true;
-                        return;
-                    }
-                    
-                    const sentenceText = this.sanitizeTextForSpeech(sentences[sentenceIndex]);
-                    if (!sentenceText.length) {
-                        sentenceIndex++;
-                        setTimeout(() => { speakNextSentence(); }, 10); 
-                        return;
-                    }
+    // Lightweight fuzzy score (no loops beyond O(n), instant for small lists)
+    function score(a, b) {
+      // token overlap
+      const ta = new Set(normalize(a).split(" "));
+      const tb = new Set(normalize(b).split(" "));
+      let match = 0;
+      ta.forEach(t => { if (tb.has(t)) match++; });
+      const denom = Math.max(ta.size, tb.size) || 1;
+      return match / denom;
+    }
 
-                    const utterance = new SpeechSynthesisUtterance(sentenceText);
-                    utterance.lang = this.language;
-                    utterance.pitch = this.voiceType === 'female' ? 1.05 : 0.95; 
-                    utterance.rate = parseFloat(this.speechRateValue) * 0.95; 
-                    utterance.volume = 1.0;
-                    utterance.voice = selectedVoice;
-                    
-                    utterance.onstart = () => {
-                        // Status update is now part of processUserInput for streaming effect
-                        this.updateMood('speaking');
-                    };
-                    
-                    utterance.onend = () => {
-                        sentenceIndex++;
-                        setTimeout(() => { speakNextSentence(); }, 300);
-                    };
-                    
-                    this.speechSynthesis.speak(utterance);
-                };
-                
-                speakNextSentence();
-            }
-            
-            testVoice() {
-                const testText = "જય શ્રી કૃષ્ણ. હું વિદુષી છું. મારું સર્જન દેવેન્દ્રભાઈએ કર્યું છે. હું તમને મદદ કરવા માટે હંમેશા તૈયાર છું.";
-                this.updateMood('ready');
-                this.speakTextNatural(testText);
-            }
-            
-            testApiConnection() {
-                if (!this.apiKey) {
-                    this.showNotification('કૃપા કરીને પહેલા તમારી API કી ઉમેરો', 'error');
-                    return;
-                }
-                if (this.voiceStatus) this.voiceStatus.textContent = '🔄 API ચકાસી રહી છું...';
-                this.updateMood('thinking');
-                
-                this.callGeminiAPI("તારું નામ શું છે અને તને કોણે બનાવી?")
-                    .then(response => {
-                        if (this.voiceStatus) this.voiceStatus.textContent = '✅ API જોડાણ સફળ';
-                        this.updateMood('ready');
-                        this.showNotification('API connection successful!', 'success');
-                        if (this.autoSpeakEnabled) this.speakTextNatural(response);
-                    })
-                    .catch(error => {
-                        if (this.voiceStatus) this.voiceStatus.textContent = '❌ API જોડાણ નિષ્ફળ';
-                        this.updateMood('error');
-                        this.showNotification('API test failed: ' + error.message, 'error');
-                    });
-            }
-            
-            saveApiKey() {
-                const apiKey = this.apiKeyInput.value.trim();
-                if (!apiKey) {
-                    this.showStatus('કૃપા કરીને API કી દાખલ કરો', 'error');
-                    return;
-                }
-                if (this.apiKey && apiKey === '•'.repeat(32)) { 
-                    this.showStatus('API કી પહેલેથી જ સેવ છે', 'error');
-                    return;
-                }
-                if (!apiKey.startsWith('AIza')) {
-                    this.showStatus('અયોગ્ય API કી ફોર્મેટ', 'error');
-                    return;
-                }
-                this.apiKey = apiKey;
-                localStorage.setItem('geminiApiKey', apiKey);
-                this.apiKeyInput.type = 'password';
-                this.apiKeyInput.value = '•'.repeat(32);
-                this.showStatus('API કી સફળતારે સેવ થઈ', 'success');
-            }
-            
-            saveAllSettings() {
-                const settings = {
-                    language: this.languageSelect.value,
-                    voice: this.voiceSelect.value,
-                    speechRate: this.speechRate.value,
-                    autoSpeak: this.autoSpeak.checked,
-                    model: this.currentModel
-                };
-                localStorage.setItem('geminiSettings', JSON.stringify(settings));
-                this.language = settings.language;
-                this.voiceType = settings.voice;
-                this.speechRateValue = settings.speechRate;
-                this.autoSpeakEnabled = settings.autoSpeak;
-                this.showStatus('બધી સેટિંગ્સ સેવ થઈ', 'success');
-            }
-            
-            resetSettings() {
-                this.languageSelect.value = 'gu-IN';
-                this.voiceSelect.value = 'female';
-                this.speechRate.value = 1;
-                this.rateValue.textContent = '1.0x';
-                this.autoSpeak.checked = true;
-                this.modelCards.forEach(card => {
-                    card.classList.toggle('active', card.dataset.model === 'gemini-2.5-flash');
-                });
-                this.currentModel = 'gemini-2.5-flash';
-                this.saveAllSettings();
-                this.showStatus('સેટિંગ્સ રિસેટ થઈ', 'success');
-            }
-            
-            loadSettings() {
-                this.apiKey = localStorage.getItem('geminiApiKey') || null;
-                if (this.apiKey) this.apiKeyInput.value = '•'.repeat(32);
-                
-                const savedSettings = localStorage.getItem('geminiSettings');
-                if (savedSettings) {
-                    const settings = JSON.parse(savedSettings);
-                    if(this.languageSelect) this.languageSelect.value = settings.language || 'gu-IN';
-                    if(this.voiceSelect) this.voiceSelect.value = settings.voice || 'female';
-                    if(this.speechRate) this.speechRate.value = settings.speechRate || 1;
-                    if(this.rateValue) this.rateValue.textContent = this.speechRate.value + 'x';
-                    if(this.autoSpeak) this.autoSpeak.checked = settings.autoSpeak !== false;
-                    this.currentModel = settings.model || 'gemini-2.5-flash';
-                    this.modelCards.forEach(card => {
-                        card.classList.toggle('active', card.dataset.model === this.currentModel);
-                    });
-                }
-            }
-            
-            showNotification(message, type = 'info') {
-                const notification = document.createElement('div');
-                notification.style.cssText = `
-                    position: fixed;
-                    top: 15px;
-                    right: 15px;
-                    padding: 10px 15px;
-                    background: ${type === 'success' ? '#6bcf7f' : type === 'error' ? '#e34c4c' : '#ffffff'};
-                    color: ${type === 'info' ? '#000000' : '#000000'};
-                    border-radius: 5px;
-                    z-index: 10000;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-                    font-size: 14px;
-                    font-weight: 500;
-                    animation: slideInRight 0.4s ease;
-                `;
-                notification.textContent = message;
-                document.body.appendChild(notification);
-                
-                setTimeout(() => {
-                    notification.style.animation = 'slideOutRight 0.4s ease forwards';
-                    setTimeout(() => {
-                        if (notification.parentNode) notification.parentNode.removeChild(notification);
-                    }, 400);
-                }, 4000);
-            }
-            
-            showStatus(message, type) {
-                if (this.statusMessage) {
-                    this.statusMessage.textContent = message;
-                    this.statusMessage.className = `status-message ${type}`;
-                    this.statusMessage.style.display = 'block';
-                    setTimeout(() => { this.statusMessage.style.display = 'none'; }, 4000);
-                }
-            }
+    function findAnswer(userText) {
+      const qn = normalize(userText);
+      if (!qn) return "";
+      // 1) exact starts-with / contains
+      let best = { idx: -1, val: "", sc: 0 };
+      for (let i = 0; i < QA.length; i++) {
+        const cand = QA[i];
+        const cq = normalize(cand.q);
+        if (qn.startsWith(cq) || cq.startsWith(qn) || qn.includes(cq) || cq.includes(qn)) {
+          return cand.a; // instant direct hit
         }
-        
-        // Initialize the application immediately when the DOM is ready.
-        document.addEventListener('DOMContentLoaded', () => {
-            const vidushi = new VidushiAI();
-            window.vidushiAI = vidushi; // Expose globally
+        const s = score(qn, cq);
+        if (s > best.sc) best = { idx: i, val: cand.a, sc: s };
+      }
+      // 2) threshold for fuzzy
+      if (best.sc >= 0.34) return best.val;
+      // 3) default concise response
+      return "મને ખ્યાલ આવ્યો કે તમે આધ્યાત્મિક વિષય પૂછો છો. કૃપા કરીને પ્રશ્ન થોડો સ્પષ્ટ લખશો—હું તરત જવાબ આપીશ.";
+    }
 
-            // Initial greeting trigger
-            if (!vidushi.initialGreetingDone) {
-                 vidushi.initialGreeting();
-            }
-        });
-    </script>
+    // Storage (optional, but fast) — no awaits
+    const KEY = "gujarati-chatbot-log";
+    function loadLog() {
+      try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
+    }
+    function saveLog(log) {
+      try { localStorage.setItem(KEY, JSON.stringify(log)); } catch {}
+    }
+
+    const chatEl = document.getElementById("chat");
+    const msgEl = document.getElementById("msg");
+    const sendBtn = document.getElementById("send");
+    const clearBtn = document.getElementById("clear");
+    const exportBtn = document.getElementById("export");
+
+    let log = loadLog();
+
+    function fmtTime(d = new Date()) {
+      const hh = d.getHours().toString().padStart(2, "0");
+      const mm = d.getMinutes().toString().padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    function addMessage(role, text, time = fmtTime()) {
+      const wrap = document.createElement("div");
+      wrap.className = "msg";
+      const avatar = document.createElement("div");
+      avatar.className = `avatar ${role}`;
+      avatar.textContent = role === "bot" ? "B" : "U";
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${role}`;
+      bubble.textContent = text;
+      const timeEl = document.createElement("div");
+      timeEl.className = "time";
+      timeEl.textContent = time;
+      bubble.appendChild(timeEl);
+      wrap.appendChild(avatar);
+      wrap.appendChild(bubble);
+      chatEl.appendChild(wrap);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      log.push({ role, text, time });
+      saveLog(log);
+    }
+
+    function instantReply(userText) {
+      // Core: compute and render immediately
+      const ans = findAnswer(userText);
+      addMessage("bot", ans);
+    }
+
+    function handleSend() {
+      const text = msgEl.value.trim();
+      if (!text) return;
+      addMessage("user", text);
+      msgEl.value = "";
+      // No artificial delay:
+      instantReply(text);
+    }
+
+    function renderFromLog() {
+      chatEl.innerHTML = "";
+      for (const item of log) addMessage(item.role, item.text, item.time);
+    }
+
+    // Init
+    renderFromLog();
+    if (log.length === 0) {
+      addMessage("bot", "નમસ્તે! હું ગુજરાતી ચેટબોટ છું. જે વિષય પૂછશો, હું તરત જવાબ આપીશ.");
+    }
+
+    // Events
+    sendBtn.addEventListener("click", handleSend);
+    msgEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+    clearBtn.addEventListener("click", () => {
+      log = [];
+      saveLog(log);
+      renderFromLog();
+      addMessage("bot", "ચેટ સાફ કરી. ફરીથી પ્રશ્ન પૂછો—જવાબ તરત મળશે.");
+    });
+    exportBtn.addEventListener("click", () => {
+      const(log, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `chat-export-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+    });
+  </script>
 </body>
 </html>
-
