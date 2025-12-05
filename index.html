@@ -3,328 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Live AI Assistant</title>
+    <title>વિદુષી - AI Assistant</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #4285f4;
-            --secondary: #34a853;
-            --accent: #ea4335;
-            --dark: #202124;
-            --light: #ffffff;
-            --gray: #5f6368;
+            /* Black and White Palette */
+            --primary: #000000; /* Black */
+            --secondary: #1a1a1a; /* Dark Gray */
+            --accent: #ffffff; /* White */
+            --light: #f0f0f0; /* Off-White/Light Gray */
+            --dark: #000000;
         }
         
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            background-color: var(--dark);
             min-height: 100vh;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        
-        /* Header */
-        header {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: var(--dark);
-        }
-        
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 400;
-        }
-        
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .nav-btn {
-            background: none;
-            border: 1px solid #333;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .nav-btn.active {
-            background: white;
-            color: black;
-        }
-        
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .nav-btn.active:hover {
-            background: white;
-        }
-        
-        /* Main Content */
-        .main-content {
-            flex: 1;
+            color: var(--light);
+            overflow-x: hidden;
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            position: relative;
         }
+
+        /* Minimal Background (Just pure black) */
+        .bg-animation { display: none; }
         
-        /* Bot Avatar */
-        .bot-avatar {
-            width: 150px;
-            height: 150px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 60px;
-            color: black;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .bot-avatar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* Page Navigation */
+        .page {
+            display: none;
+            animation: fadeIn 0.6s ease;
             width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.2) 100%);
         }
         
-        /* Microphone Button */
-        .mic-container {
+        .page.active {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Home Page - Minimal Style */
+        #homePage {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .ai-container {
+            text-align: center;
+            z-index: 10;
+            width: 100%;
+            max-width: 400px; 
+        }
+        
+        /* Minimal AI Logo (Hidden) */
+        .ai-logo { display: none; }
+        
+        .ai-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 50px; 
+            color: var(--light);
+        }
+        
+        .ai-subtitle {
+            display: none; 
+        }
+        
+        /* Minimal Mic Interface */
+        .voice-interface {
             position: relative;
-            margin-bottom: 30px;
+            margin-bottom: 50px;
         }
         
-        .voice-btn {
-            width: 60px;
-            height: 60px;
+        .voice-circle {
+            width: 100px; 
+            height: 100px;
             border-radius: 50%;
-            background: white;
-            border: none;
-            color: black;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.3s;
+            background: var(--secondary);
+            border: 2px solid var(--light);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         }
         
-        .voice-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        .voice-circle:hover {
+            background: var(--light);
+            color: var(--primary);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
         }
         
-        .voice-btn.listening {
-            background: #ff0000;
-            color: white;
+        .voice-circle.listening {
             animation: pulse-ring 1.5s infinite;
+            background: var(--light);
         }
         
         @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
         }
         
-        /* Voice Visualizer */
-        .voice-visualizer {
-            display: flex;
-            gap: 4px;
-            height: 30px;
-            align-items: center;
-            margin-bottom: 20px;
+        .mic-icon {
+            font-size: 40px;
+            color: var(--light);
+            transition: all 0.3s ease;
+        }
+
+        .voice-circle:hover .mic-icon,
+        .voice-circle.listening .mic-icon {
+            color: var(--primary);
         }
         
-        .visualizer-bar {
-            width: 4px;
-            background: white;
-            border-radius: 3px;
-            animation: soundWave 1.5s ease-in-out infinite;
+        .voice-circle.listening .mic-icon {
+            animation: mic-pulse 1.2s ease-in-out infinite;
         }
         
-        .visualizer-bar:nth-child(1) { animation-delay: 0.1s; height: 10px; }
-        .visualizer-bar:nth-child(2) { animation-delay: 0.2s; height: 20px; }
-        .visualizer-bar:nth-child(3) { animation-delay: 0.3s; height: 30px; }
-        .visualizer-bar:nth-child(4) { animation-delay: 0.4s; height: 20px; }
-        .visualizer-bar:nth-child(5) { animation-delay: 0.5s; height: 10px; }
+        .sound-waves { display: none; } 
         
-        @keyframes soundWave {
-            0%, 100% { transform: scaleY(1); }
-            50% { transform: scaleY(2); }
-        }
-        
-        /* Status */
         .voice-status {
-            font-size: 16px;
-            color: #aaa;
-            text-align: center;
-            margin-bottom: 20px;
+            font-size: 1rem;
+            color: var(--light);
+            margin-top: 25px;
+            min-height: 20px;
+            font-weight: 400;
+            /* Added animation for thinking/speaking status */
+            animation: status-glow 1.5s infinite alternate;
         }
         
-        /* Chat Messages (Hidden by default) */
-        .chat-messages {
-            position: absolute;
-            bottom: 100px;
-            left: 20px;
-            right: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
-            padding: 15px;
+        @keyframes status-glow {
+            from { opacity: 0.9; }
+            to { opacity: 0.6; }
+        }
+        
+        .quick-actions {
             display: none;
-            border: 1px solid #333;
         }
         
-        .message {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .message.user {
-            justify-content: flex-end;
-        }
-        
-        .message.ai {
-            justify-content: flex-start;
-        }
-        
-        .avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            flex-shrink: 0;
-            font-size: 12px;
-        }
-        
-        .user .avatar {
-            background: white;
-            color: black;
-        }
-        
-        .ai .avatar {
-            background: white;
-            color: black;
-        }
-        
-        .message-content {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 20px;
-            line-height: 1.4;
-            word-wrap: break-word;
-            font-size: 14px;
-        }
-        
-        .user .message-content {
-            background: white;
-            color: black;
-            border-bottom-right-radius: 5px;
-        }
-        
-        .ai .message-content {
-            background: #333;
-            color: white;
-            border-bottom-left-radius: 5px;
-        }
-        
-        /* Settings Page */
-        .settings-page {
-            display: none;
-            flex-direction: column;
-            height: 100vh;
-            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-            color: white;
+        /* Settings Page - Minimal */
+        #settingsPage {
+            min-height: 100vh;
             padding: 20px;
-            overflow-y: auto;
+            align-items: center;
+        }
+        
+        .settings-container {
+            max-width: 400px;
+            width: 100%;
+            background: var(--secondary);
+            border: 1px solid var(--light);
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.1);
         }
         
         .settings-header {
-            display: flex;
-            align-items: center;
+            text-align: center;
             margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #333;
-        }
-        
-        .back-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            margin-right: 15px;
-            cursor: pointer;
         }
         
         .settings-title {
-            font-size: 1.5rem;
-            font-weight: 400;
-        }
-        
-        .settings-content {
-            max-width: 600px;
-            margin: 0 auto;
-            width: 100%;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--light);
         }
         
         .setting-group {
@@ -333,357 +191,383 @@
         
         .setting-group label {
             display: block;
-            margin-bottom: 8px;
-            color: white;
-            font-size: 16px;
+            margin-bottom: 10px;
+            color: var(--light);
+            font-weight: 500;
+            font-size: 15px;
+        }
+        
+        .setting-group input,
+        .setting-group select {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            border: 1px solid var(--light);
+            border-radius: 5px;
+            color: var(--light);
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .setting-group input:focus,
+        .setting-group select:focus {
+            outline: none;
+            border-color: var(--light);
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
         }
         
         .api-input-group {
             position: relative;
-            margin-bottom: 15px;
-        }
-        
-        .api-input-group input {
-            width: 100%;
-            padding: 12px 15px;
-            padding-right: 40px;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 8px;
-            color: white;
-            font-size: 16px;
-        }
-        
-        .api-input-group input:focus {
-            outline: none;
-            border-color: var(--primary);
         }
         
         .toggle-password {
             position: absolute;
-            right: 10px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
-            color: #aaa;
+            color: var(--light);
+            opacity: 0.6;
             cursor: pointer;
+            font-size: 16px;
         }
         
-        .btn {
-            padding: 12px 24px;
-            background: white;
-            color: black;
-            border: none;
-            border-radius: 8px;
+        .model-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .model-card {
+            padding: 15px;
+            background: var(--primary);
+            border: 1px solid var(--light);
+            border-radius: 5px;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .model-card:hover {
+            background: #2a2a2a;
+        }
+        
+        .model-card.active {
+            background: var(--light);
+            color: var(--primary);
+            border-color: var(--light);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        .model-card.active .model-icon {
+            color: var(--primary);
+        }
+        
+        .model-icon {
+            font-size: 20px;
+            margin: 0 auto 5px;
+            color: var(--light);
+        }
+        
+        .model-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: inherit;
+        }
+        
+        .model-description {
+            display: none; 
+        }
+        
+        /* Minimal Buttons */
+        .btn {
+            padding: 15px;
+            background: var(--light);
+            border: none;
+            border-radius: 5px;
+            color: var(--primary);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
             font-size: 16px;
         }
         
         .btn:hover {
-            background: #f0f0f0;
+            background: var(--secondary);
+            color: var(--light);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
         
-        .btn.secondary {
-            background: #333;
-            color: white;
-            border: 1px solid #555;
+        .btn-secondary {
+            background: var(--primary);
+            border: 1px solid var(--light);
+            color: var(--light);
         }
         
-        .btn.secondary:hover {
-            background: #444;
+        .btn-secondary:hover {
+            background: var(--light);
+            color: var(--primary);
         }
-        
-        .model-selector {
+
+        /* Settings Quick Actions (Moved here) */
+        .settings-actions {
             display: flex;
+            flex-direction: column; 
             gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .model-btn {
-            padding: 8px 15px;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .model-btn.active {
-            background: white;
-            color: black;
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-        }
-        
-        .info-box {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid #555;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #aaa;
-        }
-        
-        .info-box a {
-            color: white;
-            text-decoration: none;
-        }
-        
-        select, input[type="range"] {
-            width: 100%;
-            padding: 10px 12px;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 8px;
-            color: white;
-        }
-        
-        .range-value {
-            font-size: 14px;
-            color: #aaa;
-            text-align: right;
-            margin-top: 5px;
-        }
-        
-        /* Footer */
-        footer {
-            background: rgba(0, 0, 0, 0.7);
-            text-align: center;
-            padding: 15px;
-            color: #aaa;
-            font-size: 14px;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            padding-top: 15px;
             border-top: 1px solid #333;
         }
         
-        /* Notification */
-        .notification {
+        /* Navigation */
+        .nav-btn {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            border-radius: 8px;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: var(--secondary);
+            border: 1px solid var(--light);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--light);
+            cursor: pointer;
+            transition: all 0.3s ease;
             z-index: 1000;
-            animation: slideInRight 0.3s ease;
-            max-width: 300px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 18px;
+            pointer-events: auto; 
+        }
+        
+        .nav-btn:hover {
+            background: var(--light);
+            color: var(--primary);
+            transform: rotate(10deg);
+        }
+        
+        .back-btn:hover {
+            transform: rotate(-10deg);
+        }
+        
+        /* Status Messages */
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+            font-weight: 500;
             font-size: 14px;
-            border: 1px solid #333;
         }
         
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .status-message.success {
+            background: #2a2a2a;
+            border: 1px solid #6bcf7f;
+            color: #6bcf7f;
         }
         
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
+        .status-message.error {
+            background: #2a2a2a;
+            border: 1px solid #e34c4c;
+            color: #e34c4c;
         }
         
-        /* Responsive */
-        @media (max-width: 768px) {
-            .bot-avatar {
-                width: 120px;
-                height: 120px;
-                font-size: 48px;
-            }
-            
-            .voice-btn {
-                width: 50px;
-                height: 50px;
-                font-size: 20px;
-            }
-            
-            .chat-messages {
-                max-height: 200px;
-            }
+        /* Info Box */
+        .info-box {
+            background: var(--primary);
+            border: 1px solid var(--light);
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: var(--light);
+            line-height: 1.5;
+        }
+        
+        .info-box a {
+            color: var(--light);
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 450px) {
+             .ai-title { font-size: 2rem; }
+             .voice-circle { width: 80px; height: 80px; }
+             .mic-icon { font-size: 30px; }
+             .voice-status { font-size: 0.9rem; }
         }
     </style>
 </head>
 <body>
+    <!-- 
+        Navigation buttons are handled by addEventListeners in JS.
+    -->
+    
+    <!-- Navigation Buttons -->
+    <button class="nav-btn" id="settingsBtn" title="Settings">
+        <i class="fas fa-cog"></i>
+    </button>
+    <button class="nav-btn back-btn" id="backBtn" title="Back" style="display: none;">
+        <i class="fas fa-arrow-left"></i>
+    </button>
+
     <!-- Home Page -->
-    <div id="homePage">
-        <header>
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-robot"></i>
+    <div id="homePage" class="page active">
+        <div class="ai-container">
+            
+            <h1 class="ai-title">વિદુષી</h1>
+            
+            <div class="voice-interface">
+                <div class="voice-circle" id="voiceBtn">
+                    <i class="fas fa-microphone mic-icon"></i>
                 </div>
-                <h1>Gemini Live AI</h1>
-            </div>
-            <div class="nav-buttons">
-                <button class="nav-btn active" id="homeNavBtn">Home</button>
-                <button class="nav-btn" id="settingsNavBtn">Settings</button>
-            </div>
-        </header>
-        
-        <div class="main-content">
-            <div class="bot-avatar">
-                <i class="fas fa-robot"></i>
+                <div class="voice-status" id="voiceStatus">વિદુષી સાથે વાત કરવા માટે ટેપ કરો</div>
             </div>
             
-            <div class="voice-visualizer" id="voiceVisualizer">
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-            </div>
-            
-            <div class="mic-container">
-                <button class="voice-btn" id="voiceBtn" title="Click and speak">
-                    <i class="fas fa-microphone"></i>
-                </button>
-            </div>
-            
-            <div class="voice-status" id="voiceStatus">
-                Click microphone to speak
-            </div>
-            
-            <div class="chat-messages" id="chatMessages">
-                <!-- Messages will appear here -->
-            </div>
         </div>
-        
-        <footer>
-            <p>Gemini Live AI Assistant | Powered by Google Gemini API</p>
-        </footer>
     </div>
     
     <!-- Settings Page -->
-    <div class="settings-page" id="settingsPage">
-        <div class="settings-header">
-            <button class="back-btn" id="backBtn">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h2 class="settings-title">Settings</h2>
-        </div>
-        
-        <div class="settings-content">
+    <div id="settingsPage" class="page">
+        <div class="settings-container">
+            <div class="settings-header">
+                <h2 class="settings-title">સેટિંગ્સ</h2>
+                <p style="color: var(--light); opacity: 0.7;">તમારા AI સહાયકને ગોઠવો</p>
+            </div>
+            
+            <div id="statusMessage" class="status-message"></div>
+            
             <div class="setting-group">
                 <label for="apiKey">
-                    <i class="fas fa-key"></i> Gemini API Key
+                    <i class="fas fa-key"></i> Gemini API કી
                 </label>
                 <div class="api-input-group">
-                    <input type="password" id="apiKey" 
-                           placeholder="Enter your Gemini API key">
+                    <input type="password" id="apiKey" placeholder="તમારી Gemini API કી દાખલ કરો">
                     <button type="button" class="toggle-password" id="toggleApiKey">
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
-                <button class="btn" id="saveApiKey">
-                    <i class="fas fa-save"></i> Save API Key
+                <button class="btn" id="saveApiKey" style="width: 100%; margin-top: 10px;">
+                    <i class="fas fa-save"></i> API કી સેવ કરો
                 </button>
             </div>
             
             <div class="setting-group">
-                <label><i class="fas fa-brain"></i> AI Model</label>
+                <label><i class="fas fa-brain"></i> AI મોડેલ</label>
                 <div class="model-selector">
-                    <button class="model-btn active" data-model="gemini-2.5-flash">Gemini 2.5 Flash</button>
-                    <button class="model-btn" data-model="gemini-2.5-pro">Gemini 2.5 Pro</button>
-                    <button class="model-btn" data-model="gemini-1.0-pro">Gemini 1.0 Pro</button>
+                    <div class="model-card active" data-model="gemini-2.5-flash">
+                        <div class="model-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="model-name">Flash (ઝડપી)</div>
+                    </div>
+                    <div class="model-card" data-model="gemini-1.5-pro">
+                        <div class="model-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="model-name">Pro (ગુણવત્તા)</div>
+                    </div>
+                </div>
+                <div class="info-box" style="margin-top: 10px;">
+                    ઝડપી જવાબો માટે 'Flash' મોડેલ પસંદ કરો. (આ ડિફોલ્ટ સેટ છે.)
                 </div>
             </div>
             
             <div class="setting-group">
-                <label for="language"><i class="fas fa-language"></i> Language</label>
+                <label for="language"><i class="fas fa-language"></i> ભાષા</label>
                 <select id="language">
-                    <option value="en-US">English (US)</option>
-                    <option value="gu-IN">Gujarati</option>
-                    <option value="hi-IN">Hindi</option>
-                    <option value="mr-IN">Marathi</option>
-                    <option value="ta-IN">Tamil</option>
+                    <option value="gu-IN">Gujarati (ગુજરાતી)</option>
+                    <option value="hi-IN">Hindi (हिंदी)</option>
+                    <option value="en-US">English</option>
+                    <option value="mr-IN">Marathi (મરાઠી)</option>
                 </select>
             </div>
             
             <div class="setting-group">
-                <label for="voice"><i class="fas fa-voice"></i> Voice Type</label>
+                <label for="voice"><i class="fas fa-microphone"></i> અવાજ પ્રકાર</label>
                 <select id="voice">
-                    <option value="male">Male Voice</option>
-                    <option value="female">Female Voice</option>
+                    <option value="female">સ્ત્રી અવાજ</option>
+                    <option value="male">પુરુષ અવાજ</option>
                 </select>
             </div>
             
             <div class="setting-group">
-                <label for="speechRate"><i class="fas fa-tachometer-alt"></i> Speech Speed</label>
-                <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1">
-                <div class="range-value" id="rateValue">1.0x</div>
+                <label for="speechRate"><i class="fas fa-tachometer-alt"></i> બોલવાની ગતિ</label>
+                <input type="range" id="speechRate" min="0.7" max="1.5" step="0.1" value="1">
+                <div style="text-align: center; margin-top: 5px; color: var(--light); opacity: 0.7;">
+                    <span id="rateValue">1.0x</span>
+                </div>
             </div>
             
             <div class="checkbox-group">
                 <input type="checkbox" id="autoSpeak" checked>
-                <label for="autoSpeak">Auto-speak responses</label>
+                <label for="autoSpeak">જવાબો આપોઆપ બોલો</label>
             </div>
             
-            <div class="checkbox-group">
-                <input type="checkbox" id="saveHistory" checked>
-                <label for="saveHistory">Save conversation history</label>
-            </div>
-            
-            <div class="setting-group">
-                <button class="btn secondary" id="testApiBtn">
-                    <i class="fas fa-bolt"></i> Test API Connection
+            <!-- Quick Actions Moved to Settings Page -->
+            <div class="settings-actions">
+                <button class="btn btn-secondary" id="testVoiceBtn">
+                    <i class="fas fa-play"></i> અવાજ ચકાસો
+                </button>
+                <button class="btn btn-secondary" id="testApiBtn">
+                    <i class="fas fa-bolt"></i> API ચકાસો
                 </button>
             </div>
             
             <div class="info-box">
-                <strong>Get FREE API Key:</strong><br>
-                1. Go to <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a><br>
-                2. Click "Create API Key"<br>
-                3. Copy the key (starts with AIza...)<br>
-                4. Paste above and click Save
+                <strong>મફત API કી મેળવો:</strong><br>
+                1. <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a> પર જાઓ<br>
+                2. "Create API Key" પર ક્લિક કરો<br>
+                3. કી કોપી કરો (AIza... થી શરૂ થાય છે)
             </div>
             
-            <div class="info-box">
-                <strong>Note:</strong> Your API key is stored locally in your browser only. All conversations go directly to Google's Gemini API. Free tier includes 60 requests per minute.
+            <div style="display: flex; gap: 10px; margin-top: 30px;">
+                <button class="btn" id="saveSettings" style="flex: 1;">
+                    <i class="fas fa-save"></i> સેવ કરો
+                </button>
+                <button class="btn btn-secondary" id="resetSettings" style="flex: 1;">
+                    <i class="fas fa-undo"></i> રીસેટ કરો
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        class GeminiAIAssistant {
+        class VidushiAI {
             constructor() {
                 this.initializeElements();
                 this.initializeState();
                 this.setupEventListeners();
                 this.initializeSpeech();
                 this.loadSettings();
+                this.mood = 'ready'; 
+                this.responsePatterns = {
+                    ready: ['✨', '😊'],
+                    speaking: ['🗣️', '💬'],
+                    thinking: ['🤔', '💭'],
+                    listening: ['🎤'],
+                    error: ['❌', '😥']
+                };
+                this.initialGreetingDone = false;
+                // Trigger initial greeting when ready
+                this.initialGreeting();
             }
             
             initializeElements() {
-                // Page elements
+                // Safely get all elements, allowing for null if DOM is not ready
                 this.homePage = document.getElementById('homePage');
                 this.settingsPage = document.getElementById('settingsPage');
-                this.homeNavBtn = document.getElementById('homeNavBtn');
-                this.settingsNavBtn = document.getElementById('settingsNavBtn');
+                this.settingsBtn = document.getElementById('settingsBtn');
                 this.backBtn = document.getElementById('backBtn');
-                
-                // Chat elements
-                this.chatMessages = document.getElementById('chatMessages');
                 this.voiceBtn = document.getElementById('voiceBtn');
                 this.voiceStatus = document.getElementById('voiceStatus');
-                this.voiceVisualizer = document.getElementById('voiceVisualizer');
-                
-                // Settings elements
+                this.testVoiceBtn = document.getElementById('testVoiceBtn');
+                this.testApiBtn = document.getElementById('testApiBtn');
                 this.apiKeyInput = document.getElementById('apiKey');
                 this.toggleApiKeyBtn = document.getElementById('toggleApiKey');
                 this.saveApiKeyBtn = document.getElementById('saveApiKey');
@@ -692,619 +576,488 @@
                 this.speechRate = document.getElementById('speechRate');
                 this.rateValue = document.getElementById('rateValue');
                 this.autoSpeak = document.getElementById('autoSpeak');
-                this.saveHistory = document.getElementById('saveHistory');
-                this.modelButtons = document.querySelectorAll('.model-btn');
-                this.testApiBtn = document.getElementById('testApiBtn');
+                this.modelCards = document.querySelectorAll('.model-card');
+                this.saveSettingsBtn = document.getElementById('saveSettings');
+                this.resetSettingsBtn = document.getElementById('resetSettings');
+                this.statusMessage = document.getElementById('statusMessage');
                 
-                // Speech
                 this.recognition = null;
                 this.speechSynthesis = window.speechSynthesis;
                 this.isListening = false;
-                this.currentUtterance = null;
-                
-                this.speechSynthesis.onvoiceschanged = () => {
-                    this.loadSpeechVoices();
-                };
-                
-                // State
-                this.apiKey = null;
-                this.currentModel = 'gemini-2.5-flash'; // Reverted to original model name
-                this.conversationHistory = [];
                 this.isProcessing = false;
+                this.availableVoices = [];
+                
+                this.loadSpeechVoices();
+            }
+            
+            showHomePage() {
+                if (this.homePage && this.homePage.classList.contains('active')) return;
+                if (this.homePage) this.homePage.classList.add('active');
+                if (this.settingsPage) this.settingsPage.classList.remove('active');
+                if (this.settingsBtn) this.settingsBtn.style.display = 'flex';
+                if (this.backBtn) this.backBtn.style.display = 'none';
+                if (!this.initialGreetingDone) {
+                    this.initialGreeting();
+                }
+            }
+            
+            showSettingsPage() {
+                if (this.settingsPage && this.settingsPage.classList.contains('active')) return;
+                if (this.homePage) this.homePage.classList.remove('active');
+                if (this.settingsPage) this.settingsPage.classList.add('active');
+                if (this.settingsBtn) this.settingsBtn.style.display = 'none';
+                if (this.backBtn) this.backBtn.style.display = 'flex';
             }
             
             initializeState() {
                 this.apiKey = localStorage.getItem('geminiApiKey') || null;
-                if (this.apiKey) {
-                    this.apiKeyInput.value = '•'.repeat(32);
-                    this.voiceStatus.textContent = 'API Key Loaded - Ready';
+                const savedSettings = localStorage.getItem('geminiSettings');
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    this.language = settings.language || 'gu-IN';
+                    this.voiceType = settings.voice || 'female';
+                    this.speechRateValue = settings.speechRate || 1;
+                    this.autoSpeakEnabled = settings.autoSpeak !== false;
+                    this.currentModel = settings.model || 'gemini-2.5-flash';
+                } else {
+                    this.language = 'gu-IN';
+                    this.voiceType = 'female';
+                    this.speechRateValue = 1;
+                    this.autoSpeakEnabled = true;
+                    this.currentModel = 'gemini-2.5-flash';
                 }
             }
             
             initializeSpeech() {
-                // Initialize Web Speech Recognition
-                if ('webkitSpeechRecognition' in window) {
-                    this.recognition = new webkitSpeechRecognition();
-                    this.setupRecognition();
-                } else if ('SpeechRecognition' in window) {
-                    this.recognition = new SpeechRecognition();
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
                     this.setupRecognition();
                 } else {
-                    this.voiceBtn.disabled = true;
-                    this.voiceStatus.textContent = 'Speech recognition not supported';
-                    console.warn('Speech Recognition not supported');
+                    if (this.voiceBtn) this.voiceBtn.style.opacity = '0.5';
+                    if (this.voiceBtn) this.voiceBtn.style.cursor = 'not-allowed';
+                    if (this.voiceStatus) this.voiceStatus.textContent = 'Speech recognition not supported';
                 }
-                
-                // Initialize Speech Synthesis
                 if (!this.speechSynthesis) {
-                    console.warn('Speech Synthesis not supported');
-                    this.autoSpeak.disabled = true;
+                    if (this.testVoiceBtn) this.testVoiceBtn.disabled = true;
                 }
             }
             
             setupRecognition() {
                 this.recognition.continuous = false;
                 this.recognition.interimResults = false;
-                this.recognition.lang = this.languageSelect.value;
-                this.recognition.maxAlternatives = 1;
+                this.recognition.lang = this.language;
                 
                 this.recognition.onstart = () => {
                     this.isListening = true;
-                    this.voiceBtn.classList.add('listening');
-                    this.voiceStatus.textContent = '🎤 Listening... Speak now';
-                    this.startVisualizer();
-                    this.chatMessages.style.display = 'block';
+                    if (this.voiceBtn) this.voiceBtn.classList.add('listening');
+                    this.updateMood('listening');
+                    if (this.voiceStatus) this.voiceStatus.textContent = '🎤 સાંભળી રહી છું...';
                 };
                 
                 this.recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
-                    console.log('Speech recognized:', transcript);
-                    this.processVoiceInput(transcript);
+                    this.processUserInput(transcript);
                 };
                 
                 this.recognition.onerror = (event) => {
                     console.error('Speech recognition error:', event.error);
-                    
-                    if (event.error === 'not-allowed') {
-                        this.voiceStatus.textContent = 'Microphone permission required';
-                        this.showNotification('Please allow microphone access', 'error');
-                    } else if (event.error === 'no-speech') {
-                        this.voiceStatus.textContent = 'No speech detected';
-                        this.showNotification('No speech detected. Please try again.', 'warning');
-                    }
-                    
                     this.stopListening();
+                    if (event.error === 'not-allowed') {
+                        this.showNotification('માઇક્રોફોનની પરવાનગી જરૂરી છે.', 'error');
+                    }
                 };
                 
-                this.recognition.onend = () => {
-                    this.stopListening();
-                };
+                this.recognition.onend = () => this.stopListening();
             }
             
             setupEventListeners() {
-                // Navigation
-                this.homeNavBtn.addEventListener('click', () => this.showHomePage());
-                this.settingsNavBtn.addEventListener('click', () => this.showSettingsPage());
-                this.backBtn.addEventListener('click', () => this.showHomePage());
-                
-                // Voice button
-                this.voiceBtn.addEventListener('click', () => this.toggleListening());
-                
-                // API key toggle
-                this.toggleApiKeyBtn.addEventListener('click', () => {
-                    const type = this.apiKeyInput.type === 'password' ? 'text' : 'password';
-                    this.apiKeyInput.type = type;
-                    this.toggleApiKeyBtn.innerHTML = type === 'password' ? 
-                        '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-                });
-                
-                // Save API key
-                this.saveApiKeyBtn.addEventListener('click', () => this.saveApiKey());
-                
-                // Model selection
-                this.modelButtons.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        this.modelButtons.forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        this.currentModel = btn.dataset.model;
-                        this.showNotification(`Model changed to ${this.currentModel}`, 'success');
-                        this.saveSettings();
-                    });
-                });
-                
-                // Settings changes
-                this.languageSelect.addEventListener('change', () => {
-                    if (this.recognition) {
-                        this.recognition.lang = this.languageSelect.value;
-                    }
-                    this.saveSettings();
-                });
-                
-                this.speechRate.addEventListener('input', () => {
-                    this.rateValue.textContent = this.speechRate.value + 'x';
-                    this.saveSettings();
-                });
-                
-                this.voiceSelect.addEventListener('change', () => this.saveSettings());
-                this.autoSpeak.addEventListener('change', () => this.saveSettings());
-                this.saveHistory.addEventListener('change', () => this.saveSettings());
-                
-                // Test API
-                this.testApiBtn.addEventListener('click', () => this.testApiConnection());
-                
-                // Load saved settings
-                window.addEventListener('load', () => this.loadSettings());
-            }
-            
-            showHomePage() {
-                this.homePage.style.display = 'flex';
-                this.settingsPage.style.display = 'none';
-                this.homeNavBtn.classList.add('active');
-                this.settingsNavBtn.classList.remove('active');
-            }
-            
-            showSettingsPage() {
-                this.homePage.style.display = 'none';
-                this.settingsPage.style.display = 'flex';
-                this.homeNavBtn.classList.remove('active');
-                this.settingsNavBtn.classList.add('active');
-            }
-            
-            async processVoiceInput(text) {
-                if (!text.trim()) return;
-                
-                // Add user message
-                this.addMessage(text, 'user');
-                
-                // Process with Gemini
-                await this.processWithGemini(text);
-            }
-            
-            async processWithGemini(userMessage) {
-                if (!this.apiKey) {
-                    this.showNotification('Please add your Gemini API key first', 'error');
-                    this.addMessage('I need a Gemini API key to respond. Please add your API key in the settings.', 'ai');
-                    return;
-                }
-                
-                if (this.isProcessing) {
-                    this.showNotification('Already processing a request', 'warning');
-                    return;
-                }
-                
-                this.isProcessing = true;
-                
-                try {
-                    // Prepare conversation history
-                    const messages = this.conversationHistory.slice(-10).map(msg => ({
-                        role: msg.sender === 'user' ? 'user' : 'model',
-                        parts: [{ text: msg.text }]
-                    }));
-                    
-                    // Add current message
-                    messages.push({
-                        role: 'user',
-                        parts: [{ text: userMessage }]
-                    });
-                    
-                    console.log('Sending to Gemini API:', {
-                        model: this.currentModel,
-                        messageCount: messages.length
-                    });
-                    
-                    // Call Gemini API
-                    const response = await this.callGeminiAPI(messages);
-                    
-                    if (response) {
-                        // Add AI response
-                        this.addMessage(response, 'ai');
-                        
-                        // Speak if enabled
-                        if (this.autoSpeak.checked) {
-                            this.speakText(response);
-                        }
-                        
-                        // Save to history
-                        this.conversationHistory.push(
-                            { sender: 'user', text: userMessage },
-                            { sender: 'ai', text: response }
-                        );
-                        
-                        // Keep only last 20 messages
-                        if (this.conversationHistory.length > 20) {
-                            this.conversationHistory = this.conversationHistory.slice(-20);
-                        }
-                        
-                        // Save history if enabled
-                        if (this.saveHistory.checked) {
-                            this.saveConversationHistory();
-                        }
-                    }
-                } catch (error) {
-                    console.error('Gemini API error:', error);
-                    
-                    let errorMessage = '';
-                    if (error.message.includes('API key')) {
-                        errorMessage = 'Invalid API key. Please check and update your API key.';
-                    } else if (error.message.includes('quota')) {
-                        errorMessage = 'API quota exceeded. Free tier allows 60 requests per minute.';
-                    } else if (error.message.includes('model')) {
-                        errorMessage = 'Model error. Please try a different model in settings.';
-                    } else {
-                        errorMessage = `Error: ${error.message}`;
-                    }
-                    
-                    this.addMessage(errorMessage, 'ai');
-                    this.showNotification('API Error - ' + errorMessage, 'error');
-                } finally {
-                    this.isProcessing = false;
-                }
-            }
-            
-            async callGeminiAPI(messages) {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
-                
-                console.log('API URL:', apiUrl);
-                console.log('Using model:', this.currentModel);
-                
-                const requestBody = {
-                    contents: messages,
-                    generationConfig: {
-                        temperature: 0.7,
-                        topK: 40,
-                        topP: 0.95,
-                        maxOutputTokens: 2048,
-                    },
-                    safetySettings: [
-                        {
-                            category: "HARM_CATEGORY_HARASSMENT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_HATE_SPEECH",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        }
-                    ]
-                };
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('API Error Response:', errorData);
-                    throw new Error(errorData.error?.message || 'API request failed');
-                }
-                
-                const data = await response.json();
-                console.log('API Success Response:', data);
-                
-                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-                    return data.candidates[0].content.parts[0].text;
-                } else {
-                    console.error('No valid response:', data);
-                    throw new Error('No response from AI');
-                }
-            }
-            
-            addMessage(text, sender) {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${sender}`;
-                
-                const avatarDiv = document.createElement('div');
-                avatarDiv.className = 'avatar';
-                avatarDiv.innerHTML = sender === 'user' ? 
-                    '<i class="fas fa-user"></i>' : 
-                    '<i class="fas fa-robot"></i>';
-                
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'message-content';
-                contentDiv.textContent = text;
-                
-                messageDiv.appendChild(avatarDiv);
-                messageDiv.appendChild(contentDiv);
-                
-                this.chatMessages.appendChild(messageDiv);
-                
-                // Scroll to bottom
-                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-            }
-            
-            speakText(text) {
-                if (!this.speechSynthesis) return;
-                
-                // Cancel any ongoing speech
-                if (this.currentUtterance) {
-                    this.speechSynthesis.cancel();
-                }
-                
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = this.languageSelect.value;
-                utterance.rate = parseFloat(this.speechRate.value);
-                utterance.pitch = 1.0;
-                utterance.volume = 1.0;
-                
-                // Try to select voice
-                const voices = this.speechSynthesis.getVoices();
-                if (voices.length > 0) {
-                    const voiceType = this.voiceSelect.value;
-                    let selectedVoice = voices[0];
-                    
-                    // Select voice based on language and gender
-                    for (let voice of voices) {
-                        if (voice.lang.startsWith(this.languageSelect.value.split('-')[0])) {
-                            const isFemale = voice.name.toLowerCase().includes('female') || voice.name.toLowerCase().includes('woman') || voice.name.toLowerCase().includes('samantha');
-                            const isMale = voice.name.toLowerCase().includes('male') || voice.name.toLowerCase().includes('man') || voice.name.toLowerCase().includes('alex') || voice.name.toLowerCase().includes('daniel');
+                // *** CRITICAL FIX: Attach navigation listeners directly here using safe checks ***
+                if (this.settingsBtn) this.settingsBtn.addEventListener('click', () => this.showSettingsPage());
+                if (this.backBtn) this.backBtn.addEventListener('click', () => this.showHomePage());
 
-                            if (voiceType === 'female' && isFemale) {
-                                selectedVoice = voice;
-                                break;
-                            } else if (voiceType === 'male' && isMale) {
-                                selectedVoice = voice;
-                                break;
-                            }
-                            // If specific gender not found, try to match language only
-                            selectedVoice = voice;
-                        }
+                if (this.voiceBtn) this.voiceBtn.addEventListener('click', () => this.toggleListening());
+                if (this.testVoiceBtn) this.testVoiceBtn.addEventListener('click', () => this.testVoice());
+                if (this.testApiBtn) this.testApiBtn.addEventListener('click', () => this.testApiConnection());
+                this.setupSettingsListeners();
+            }
+            
+            setupSettingsListeners() {
+                if (this.toggleApiKeyBtn) this.toggleApiKeyBtn.addEventListener('click', () => {
+                    if (this.apiKeyInput) {
+                        const type = this.apiKeyInput.type === 'password' ? 'text' : 'password';
+                        this.apiKeyInput.type = type;
+                        this.toggleApiKeyBtn.innerHTML = type === 'password' ? 
+                            '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
                     }
-                    
-                    utterance.voice = selectedVoice;
-                }
+                });
                 
-                utterance.onstart = () => {
-                    this.voiceStatus.textContent = '🔊 Speaking...';
-                };
-                
-                utterance.onend = () => {
-                    this.voiceStatus.textContent = 'Click microphone to speak';
-                    this.currentUtterance = null;
-                };
-                
-                this.currentUtterance = utterance;
-                this.speechSynthesis.speak(utterance);
+                if (this.saveApiKeyBtn) this.saveApiKeyBtn.addEventListener('click', () => this.saveApiKey());
+                this.modelCards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        this.modelCards.forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                        this.currentModel = card.dataset.model;
+                    });
+                });
+                if (this.speechRate) this.speechRate.addEventListener('input', () => {
+                    if (this.rateValue) this.rateValue.textContent = this.speechRate.value + 'x';
+                });
+                if (this.saveSettingsBtn) this.saveSettingsBtn.addEventListener('click', () => this.saveAllSettings());
+                if (this.resetSettingsBtn) this.resetSettingsBtn.addEventListener('click', () => this.resetSettings());
             }
             
             loadSpeechVoices() {
-                const voices = this.speechSynthesis.getVoices();
-                if (voices.length === 0) {
-                    // If not loaded yet, try again after 100ms
-                    setTimeout(() => this.loadSpeechVoices(), 100);
+                const loadVoices = () => {
+                    this.availableVoices = this.speechSynthesis.getVoices();
+                    if (this.availableVoices.length === 0) {
+                        setTimeout(loadVoices, 100);
+                    }
+                };
+                if (this.speechSynthesis.getVoices().length === 0) {
+                    this.speechSynthesis.addEventListener('voiceschanged', loadVoices);
                 } else {
-                    console.log('Voices successfully loaded. Count:', voices.length);
+                    loadVoices();
                 }
             }
             
             toggleListening() {
-                if (!this.recognition) {
-                    this.showNotification('Speech recognition not available', 'error');
-                    return;
-                }
-                
+                if (!this.recognition) return;
                 if (!this.apiKey) {
-                    this.showNotification('Please add your Gemini API key first', 'error');
+                    this.showNotification('કૃપા કરીને પહેલા તમારી API કી ઉમેરો', 'error');
                     return;
                 }
-                
                 if (this.isListening) {
                     this.recognition.stop();
                 } else {
-                    // Request microphone permission
-                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        navigator.mediaDevices.getUserMedia({ audio: true })
-                            .then(() => {
-                                this.recognition.lang = this.languageSelect.value;
-                                this.recognition.start();
-                            })
-                            .catch(err => {
-                                console.error('Microphone access denied:', err);
-                                this.showNotification('Microphone permission required', 'error');
-                            });
-                    } else {
-                        this.recognition.lang = this.languageSelect.value;
+                    try {
+                        this.recognition.lang = this.language;
                         this.recognition.start();
+                    } catch (error) {
+                        console.error('Recognition start error:', error);
                     }
                 }
             }
             
             stopListening() {
                 this.isListening = false;
-                this.voiceBtn.classList.remove('listening');
-                this.voiceStatus.textContent = 'Click microphone to speak';
-                this.stopVisualizer();
-                
-                if (this.recognition && this.recognition.abort) {
-                    this.recognition.abort();
+                if (this.voiceBtn) this.voiceBtn.classList.remove('listening');
+                this.updateMood('ready');
+                if (!this.isProcessing && !this.speechSynthesis.speaking && this.voiceStatus) {
+                    this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો';
+                }
+                if (this.recognition && this.recognition.stop) {
+                    try { this.recognition.stop(); } catch (e) {}
                 }
             }
             
-            startVisualizer() {
-                const bars = this.voiceVisualizer.querySelectorAll('.visualizer-bar');
-                bars.forEach(bar => {
-                    bar.style.animationPlayState = 'running';
-                });
+            updateMood(newMood) {
+                this.mood = newMood;
+                const micIcon = document.querySelector('.mic-icon');
+                if (micIcon) {
+                    if (newMood === 'ready') {
+                        micIcon.style.color = 'var(--light)';
+                    } else {
+                        micIcon.style.color = 'var(--primary)';
+                    }
+                }
             }
             
-            stopVisualizer() {
-                const bars = this.voiceVisualizer.querySelectorAll('.visualizer-bar');
-                bars.forEach(bar => {
-                    bar.style.animationPlayState = 'paused';
-                });
+            getRandomEmoji(mood) {
+                const emojis = this.responsePatterns[mood] || this.responsePatterns.ready;
+                return emojis[Math.floor(Math.random() * emojis.length)];
+            }
+
+            initialGreeting() {
+                if (this.initialGreetingDone || this.speechSynthesis.speaking) return;
+
+                const greeting = "જય શ્રી કૃષ્ણ. હું વિદુષી છું. મને આશા છે કે તમે મજામાં હશો.";
+                this.speakTextNatural(greeting, true); // true to mark as greeting
             }
             
-            async testApiConnection() {
-                if (!this.apiKey) {
-                    this.showNotification('Please add your API key first', 'error');
+            async processUserInput(text) {
+                if (!text.trim()) return;
+                if (this.isProcessing) return;
+                
+                // 'બંધ' કમાન્ડ
+                if (text.toLowerCase().includes('બંધ')) {
+                    if (this.speechSynthesis.speaking) {
+                        this.speechSynthesis.cancel();
+                        if (this.voiceStatus) this.voiceStatus.textContent = '🔇 બોલવાનું બંધ કર્યું';
+                        this.updateMood('ready');
+                    }
+                    this.isProcessing = false;
+                    setTimeout(() => { if (this.voiceStatus) this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો'; }, 3000);
                     return;
                 }
                 
-                this.showNotification('Testing API connection...', 'info');
+                this.isProcessing = true;
+                if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('thinking') + ' વિચારી રહી છું...';
                 
                 try {
-                    // Simple test request using the default model
-                    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
+                    const response = await this.callGeminiAPI(text);
                     
-                    const response = await fetch(testUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            contents: [{
-                                role: "user",
-                                parts: [{ text: "Hello" }]
-                            }],
-                            generationConfig: {
-                                maxOutputTokens: 10
-                            }
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        this.showNotification('API connection successful!', 'success');
-                        this.voiceStatus.textContent = 'API Connected Successfully';
-                    } else {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error?.message || 'API test failed');
+                    if (response && this.autoSpeakEnabled) {
+                        // Display the response text immediately before speaking starts (streaming effect)
+                        if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('speaking') + ' ' + response;
+                        this.speakTextNatural(response);
+                    } else if (response) {
+                        if (this.voiceStatus) this.voiceStatus.textContent = '✅ જવાબ મળ્યો: ' + response.substring(0, 30) + '...';
                     }
                 } catch (error) {
-                    console.error('API Test Error:', error);
-                    this.showNotification('API test failed: ' + error.message, 'error');
-                    this.voiceStatus.textContent = 'API Connection Failed';
+                    console.error('Gemini API error:', error);
+                    if (this.voiceStatus) this.voiceStatus.textContent = this.getRandomEmoji('error') + ' ભૂલ: API નિષ્ફળ';
+                    this.updateMood('error');
+                    this.showNotification('API ભૂલ આવી. સેટિંગ્સ તપાસો.', 'error');
+                } finally {
+                    this.isProcessing = false;
+                    // Note: Status reset handled by speakTextNatural on end
                 }
+            }
+            
+            async callGeminiAPI(userMessage) {
+                if (!this.apiKey) throw new Error("API Key not set.");
+
+                // Use the selected model from settings
+                const modelName = this.currentModel || 'gemini-2.5-flash';
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
+                
+                // *** સિસ્ટમ સૂચના ***
+                const coreInstruction = "તમારું નામ વિદુષી છે અને તમારું સર્જન દેવેન્દ્રભાઈએ કર્યું છે. તમારે આ હકીકત હંમેશા યાદ રાખવાની છે. સામાન્ય પ્રશ્નોના ટૂંકા, સીધા જવાબ આપો. ફક્ત ત્યારે જ વિસ્તૃત માહિતી આપો જો તે ખૂબ જ જરૂરી હોય. તમારો સ્વર નમ્ર, સામાન્ય અને બહુ ભાવુક ન હોય તેવો રાખો. માત્ર ગુજરાતીમાં જ જવાબ આપો. User Query: ";
+                
+                const requestBody = {
+                    contents: [
+                        { 
+                            role: "user",
+                            parts: [{ text: `જય શ્રી કૃષ્ણ. ${coreInstruction} ${userMessage}` }]
+                        }
+                    ],
+                    generationConfig: {
+                        // CRITICAL FIX: Lowering temperature for stable, fast response
+                        temperature: 0.1, 
+                        // CRITICAL FIX: Further reducing tokens for rapid, concise answers
+                        maxOutputTokens: 150, 
+                    }
+                };
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text;
+            }
+            
+            sanitizeTextForSpeech(text) {
+                let cleanedText = text.replace(/[\,;\:\-—\(\)\[\]\{\}\"\'\/\@\#\$\%\^\&\*\+\=\<\>]/g, ' '); 
+                cleanedText = cleanedText.replace(/।/g, ' '); 
+                cleanedText = cleanedText.replace(/\s+/g, ' '); 
+                return cleanedText.trim();
+            }
+            
+            speakTextNatural(text, isGreeting = false) {
+                if (!this.speechSynthesis) return;
+                if (this.speechSynthesis.speaking) this.speechSynthesis.cancel();
+                
+                const sentences = text.split(/[.!?\n]+/).filter(s => s.trim().length > 0);
+                
+                const voices = this.speechSynthesis.getVoices();
+                let selectedVoice = voices.find(v => v.lang === this.language && v.name.toLowerCase().includes('female'));
+                if (!selectedVoice) selectedVoice = voices.find(v => v.lang === this.language);
+                if (!selectedVoice && this.voiceType === 'female') selectedVoice = voices.find(v => v.name.toLowerCase().includes('female'));
+                if (!selectedVoice) selectedVoice = voices[0];
+                
+                let sentenceIndex = 0;
+                const speakNextSentence = () => {
+                    if (sentenceIndex >= sentences.length) {
+                        this.updateMood('ready');
+                        if (this.voiceStatus) this.voiceStatus.textContent = 'વિદુષી સાથે વાત કરવા માટે ટેપ કરો';
+                        if (isGreeting) this.initialGreetingDone = true;
+                        return;
+                    }
+                    
+                    const sentenceText = this.sanitizeTextForSpeech(sentences[sentenceIndex]);
+                    if (!sentenceText.length) {
+                        sentenceIndex++;
+                        setTimeout(() => { speakNextSentence(); }, 10); 
+                        return;
+                    }
+
+                    const utterance = new SpeechSynthesisUtterance(sentenceText);
+                    utterance.lang = this.language;
+                    utterance.pitch = this.voiceType === 'female' ? 1.05 : 0.95; 
+                    utterance.rate = parseFloat(this.speechRateValue) * 0.95; 
+                    utterance.volume = 1.0;
+                    utterance.voice = selectedVoice;
+                    
+                    utterance.onstart = () => {
+                        // Status update is now part of processUserInput for streaming effect
+                        this.updateMood('speaking');
+                    };
+                    
+                    utterance.onend = () => {
+                        sentenceIndex++;
+                        setTimeout(() => { speakNextSentence(); }, 300);
+                    };
+                    
+                    this.speechSynthesis.speak(utterance);
+                };
+                
+                speakNextSentence();
+            }
+            
+            testVoice() {
+                const testText = "જય શ્રી કૃષ્ણ. હું વિદુષી છું. મારું સર્જન દેવેન્દ્રભાઈએ કર્યું છે. હું તમને મદદ કરવા માટે હંમેશા તૈયાર છું.";
+                this.updateMood('ready');
+                this.speakTextNatural(testText);
+            }
+            
+            testApiConnection() {
+                if (!this.apiKey) {
+                    this.showNotification('કૃપા કરીને પહેલા તમારી API કી ઉમેરો', 'error');
+                    return;
+                }
+                if (this.voiceStatus) this.voiceStatus.textContent = '🔄 API ચકાસી રહી છું...';
+                this.updateMood('thinking');
+                
+                this.callGeminiAPI("તારું નામ શું છે અને તને કોણે બનાવી?")
+                    .then(response => {
+                        if (this.voiceStatus) this.voiceStatus.textContent = '✅ API જોડાણ સફળ';
+                        this.updateMood('ready');
+                        this.showNotification('API connection successful!', 'success');
+                        if (this.autoSpeakEnabled) this.speakTextNatural(response);
+                    })
+                    .catch(error => {
+                        if (this.voiceStatus) this.voiceStatus.textContent = '❌ API જોડાણ નિષ્ફળ';
+                        this.updateMood('error');
+                        this.showNotification('API test failed: ' + error.message, 'error');
+                    });
             }
             
             saveApiKey() {
                 const apiKey = this.apiKeyInput.value.trim();
-                
                 if (!apiKey) {
-                    this.showNotification('Please enter an API key', 'error');
+                    this.showStatus('કૃપા કરીને API કી દાખલ કરો', 'error');
                     return;
                 }
-                
+                if (this.apiKey && apiKey === '•'.repeat(32)) { 
+                    this.showStatus('API કી પહેલેથી જ સેવ છે', 'error');
+                    return;
+                }
                 if (!apiKey.startsWith('AIza')) {
-                    this.showNotification('Invalid API key format. Should start with "AIza"', 'error');
+                    this.showStatus('અયોગ્ય API કી ફોર્મેટ', 'error');
                     return;
                 }
-                
                 this.apiKey = apiKey;
                 localStorage.setItem('geminiApiKey', apiKey);
                 this.apiKeyInput.type = 'password';
                 this.apiKeyInput.value = '•'.repeat(32);
-                
-                this.showNotification('API key saved successfully', 'success');
-                this.voiceStatus.textContent = 'API Key Saved - Testing...';
-                
-                // Test the API key
-                setTimeout(() => this.testApiConnection(), 500);
+                this.showStatus('API કી સફળતારે સેવ થઈ', 'success');
             }
             
-            saveSettings() {
+            saveAllSettings() {
                 const settings = {
                     language: this.languageSelect.value,
                     voice: this.voiceSelect.value,
                     speechRate: this.speechRate.value,
                     autoSpeak: this.autoSpeak.checked,
-                    saveHistory: this.saveHistory.checked,
                     model: this.currentModel
                 };
-                
                 localStorage.setItem('geminiSettings', JSON.stringify(settings));
-                this.showNotification('Settings saved', 'success');
+                this.language = settings.language;
+                this.voiceType = settings.voice;
+                this.speechRateValue = settings.speechRate;
+                this.autoSpeakEnabled = settings.autoSpeak;
+                this.showStatus('બધી સેટિંગ્સ સેવ થઈ', 'success');
+            }
+            
+            resetSettings() {
+                this.languageSelect.value = 'gu-IN';
+                this.voiceSelect.value = 'female';
+                this.speechRate.value = 1;
+                this.rateValue.textContent = '1.0x';
+                this.autoSpeak.checked = true;
+                this.modelCards.forEach(card => {
+                    card.classList.toggle('active', card.dataset.model === 'gemini-2.5-flash');
+                });
+                this.currentModel = 'gemini-2.5-flash';
+                this.saveAllSettings();
+                this.showStatus('સેટિંગ્સ રિસેટ થઈ', 'success');
             }
             
             loadSettings() {
+                this.apiKey = localStorage.getItem('geminiApiKey') || null;
+                if (this.apiKey) this.apiKeyInput.value = '•'.repeat(32);
+                
                 const savedSettings = localStorage.getItem('geminiSettings');
                 if (savedSettings) {
                     const settings = JSON.parse(savedSettings);
-                    
-                    this.languageSelect.value = settings.language || 'en-US';
-                    this.voiceSelect.value = settings.voice || 'female';
-                    this.speechRate.value = settings.speechRate || 1;
-                    this.rateValue.textContent = this.speechRate.value + 'x';
-                    this.autoSpeak.checked = settings.autoSpeak !== false;
-                    this.saveHistory.checked = settings.saveHistory !== false;
-                    this.currentModel = settings.model || 'gemini-2.5-flash'; // Reverted to original model name
-                    
-                    // Update model buttons
-                    this.modelButtons.forEach(btn => {
-                        btn.classList.toggle('active', btn.dataset.model === this.currentModel);
+                    if(this.languageSelect) this.languageSelect.value = settings.language || 'gu-IN';
+                    if(this.voiceSelect) this.voiceSelect.value = settings.voice || 'female';
+                    if(this.speechRate) this.speechRate.value = settings.speechRate || 1;
+                    if(this.rateValue) this.rateValue.textContent = this.speechRate.value + 'x';
+                    if(this.autoSpeak) this.autoSpeak.checked = settings.autoSpeak !== false;
+                    this.currentModel = settings.model || 'gemini-2.5-flash';
+                    this.modelCards.forEach(card => {
+                        card.classList.toggle('active', card.dataset.model === this.currentModel);
                     });
-                    
-                    if (this.recognition) {
-                        this.recognition.lang = this.languageSelect.value;
-                    }
                 }
-                
-                // Load conversation history
-                if (this.saveHistory.checked) {
-                    const savedHistory = localStorage.getItem('geminiConversationHistory');
-                    if (savedHistory) {
-                        this.conversationHistory = JSON.parse(savedHistory);
-                    }
-                }
-            }
-            
-            saveConversationHistory() {
-                localStorage.setItem('geminiConversationHistory', 
-                    JSON.stringify(this.conversationHistory));
             }
             
             showNotification(message, type = 'info') {
-                // Create notification element
                 const notification = document.createElement('div');
-                notification.className = 'notification';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 15px;
+                    right: 15px;
+                    padding: 10px 15px;
+                    background: ${type === 'success' ? '#6bcf7f' : type === 'error' ? '#e34c4c' : '#ffffff'};
+                    color: ${type === 'info' ? '#000000' : '#000000'};
+                    border-radius: 5px;
+                    z-index: 10000;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                    font-size: 14px;
+                    font-weight: 500;
+                    animation: slideInRight 0.4s ease;
+                `;
                 notification.textContent = message;
-                
-                // Set color based on type
-                if (type === 'success') {
-                    notification.style.borderColor = '#34a853';
-                } else if (type === 'error') {
-                    notification.style.borderColor = '#ea4335';
-                } else if (type === 'warning') {
-                    notification.style.borderColor = '#fbbc04';
-                }
-                
                 document.body.appendChild(notification);
                 
-                // Remove after 3 seconds
                 setTimeout(() => {
-                    notification.style.animation = 'slideOutRight 0.3s ease';
+                    notification.style.animation = 'slideOutRight 0.4s ease forwards';
                     setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 300);
-                }, 3000);
+                        if (notification.parentNode) notification.parentNode.removeChild(notification);
+                    }, 400);
+                }, 4000);
+            }
+            
+            showStatus(message, type) {
+                if (this.statusMessage) {
+                    this.statusMessage.textContent = message;
+                    this.statusMessage.className = `status-message ${type}`;
+                    this.statusMessage.style.display = 'block';
+                    setTimeout(() => { this.statusMessage.style.display = 'none'; }, 4000);
+                }
             }
         }
         
-        // Initialize the application
+        // Initialize the application immediately when the DOM is ready.
         document.addEventListener('DOMContentLoaded', () => {
-            window.aiAssistant = new GeminiAIAssistant();
-            
-            // Load speech voices after 500ms
-            setTimeout(() => {
-                window.aiAssistant.loadSpeechVoices();
-            }, 500); 
+            const vidushi = new VidushiAI();
+            window.vidushiAI = vidushi; // Expose globally
 
-            console.log('✅ Gemini Live AI Assistant initialized');
-            console.log('🌐 HTTPS:', window.location.protocol === 'https:');
-            console.log('🎤 Speech Recognition:', !!window.aiAssistant.recognition);
-            console.log('🔊 Speech Synthesis:', !!window.aiAssistant.speechSynthesis);
+            // Initial greeting trigger
+            if (!vidushi.initialGreetingDone) {
+                 vidushi.initialGreeting();
+            }
         });
     </script>
 </body>
 </html>
+
