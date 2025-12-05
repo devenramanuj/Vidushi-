@@ -46,6 +46,8 @@
             overflow: hidden;
             border: 1px solid var(--border-color);
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
         
         /* --- HEADER & VIDUSHI LINE --- */
@@ -72,7 +74,9 @@
         
         /* --- PAGE STRUCTURE & SETTINGS TOGGLE --- */
         .content-area {
-            min-height: 600px;
+            min-height: 550px; /* Adjusted for footer */
+            flex-grow: 1;
+            position: relative;
         }
 
         #chatPage, #settingsPage {
@@ -80,15 +84,15 @@
             display: flex;
             flex-direction: column;
             transition: opacity 0.3s ease-in-out;
+            height: 100%;
+            position: absolute; /* To overlap properly in content area */
+            width: 100%;
+            top: 0;
+            left: 0;
         }
 
         #settingsPage {
             display: none; /* Initial state */
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
             background: var(--secondary-bg);
             z-index: 10;
             overflow-y: auto;
@@ -100,13 +104,13 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            overflow: hidden; /* Contain messages */
         }
 
         .chat-messages {
             flex-grow: 1;
             padding: 0 0 15px 0;
             overflow-y: auto;
-            max-height: 400px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -178,12 +182,13 @@
 
         /* --- CONTROLS --- */
         .voice-controls {
-            padding: 15px 0 0 0;
+            padding: 10px 0 0 0;
             border-top: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
+            flex-shrink: 0;
         }
         
         /* MIC BUTTON */
@@ -248,7 +253,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            margin-top: 15px;
+            margin-top: 10px;
             transition: all 0.3s;
             box-shadow: 0 4px 10px rgba(255, 0, 0, 0.2);
         }
@@ -434,6 +439,17 @@
         }
         input:checked + .slider { background-color: var(--status-green); }
         input:checked + .slider:before { transform: translateX(26px); }
+
+        /* --- FOOTER STYLES --- */
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid var(--border-color);
+            background: var(--secondary-bg);
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -567,6 +583,11 @@
                 </div>
             </div>
         </div>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            Developed by - Devendra Ramanuj | 9276595936
+        </footer>
     </div>
 
     <script>
@@ -695,11 +716,18 @@
                 const settingsPage = this.elements.settingsPage;
                 
                 if (pageId === 'settings') {
-                    chatPage.style.display = 'none';
-                    settingsPage.style.display = 'flex';
-                } else {
-                    settingsPage.style.display = 'none';
-                    chatPage.style.display = 'flex';
+                    chatPage.style.display = 'none'; // Initially hide, but check CSS for positioning
+                    chatPage.style.zIndex = pageId === 'chat' ? 5 : 1;
+                    settingsPage.style.display = pageId === 'settings' ? 'flex' : 'none';
+                    
+                    // Simple logic for the single page app structure we built
+                    if(pageId === 'settings') {
+                         settingsPage.style.display = 'flex';
+                         chatPage.style.display = 'none';
+                    } else {
+                         settingsPage.style.display = 'none';
+                         chatPage.style.display = 'flex';
+                    }
                 }
             }
 
@@ -800,7 +828,7 @@
                                નિયમો:
                                1. જ્યારે પણ પહેલીવાર વાત થાય ત્યારે 'જય શ્રી કૃષ્ણ 🙏' થી શરૂઆત કરવી.
                                2. સામાન્ય પ્રશ્નોના સરળ અને ટૂંકમાં જવાબ આપવા.
-                               3. જો પ્રશ્ન ગહન, આધ્યાત્મિક કે જટિલ હોય, તો પહેલા ટૂંકમાં કહીને પૂછવું કે "શું આપ આના વિશે વધુ વિસ્તૃત માહિતી જાણવા માંગો છો?"
+                               3. જો પ્રશ્ન ગહન, આધ્યાત્મિક કે જટિલ હોય, તો પહેલા ટૂંકમાં કહીને પૂછવું કે "શું આપ આના વિશે વધુ વિસ્તૃત માહિતી ઈચ્છો છો?"
                                4. જવાબમાં બિનજરૂરી ચિન્હો ન વાપરવા, પણ વિવેક અને નમ્રતા રાખવી.
                                `
                     }]
