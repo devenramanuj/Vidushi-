@@ -650,7 +650,7 @@
                 }
             }
 
-            // --- Speech Synthesis (Output) Methods (FIXED HERE) ---
+            // --- Speech Synthesis (Output) Methods (UPDATED with Symbol Cleaning) ---
             speakText(text) {
                 if (!this.speechSynthesis) return;
 
@@ -660,15 +660,27 @@
 
                 this.updateConnectionStatus('Speaking');
                 
-                // FIX: TTS માટે વિરામચિહ્નો દૂર કરો
-                // (કોમા, પૂર્ણવિરામ, પ્રશ્નાર્થ, ઉદ્ગારવાચક, કોટેશન માર્ક્સ વગેરે દૂર કરી દો)
-                const cleanedText = text.replace(/[.,?!:;“”"«»]/g, ''); 
+                // --- સુધારો: ચિન્હો સાફ કરવાનું લોજિક ---
+                let cleanText = text;
+
+                // 1. માર્કડાઉન ચિન્હો (*, #, _, `) અને કૌંસ [] () દૂર કરો
+                // આનાથી "Star", "Hash", "Dash" એવું બોલવાનું બંધ થશે.
+                cleanText = cleanText.replace(/[*#_`~>\[\]()]/g, ""); 
+
+                // 2. લિંક (http...) હોય તો તે ન વંચાય તે માટે 'Link' શબ્દ મૂકવો
+                cleanText = cleanText.replace(/https?:\/\/\S+/g, " લિંક ");
+
+                // 3. ડબલ સ્પેસ દૂર કરો
+                cleanText = cleanText.replace(/\s+/g, " ").trim();
                 
-                const utterance = new SpeechSynthesisUtterance(cleanedText);
+                // નોંધ: અલ્પવિરામ (,) અને પૂર્ણવિરામ (.) રાખ્યા છે જેથી બોટ અટકીને બોલે.
+                // ---------------------------
+
+                const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = this.elements.language.value;
                 utterance.rate = parseFloat(this.elements.speechRate.value);
                 
-                // Voice selection logic (remains same)
+                // Voice selection logic
                 if (this.voices.length > 0) {
                     const voiceType = this.elements.voice.value;
                     const langCode = utterance.lang.split('-')[0];
@@ -700,7 +712,7 @@
                 this.speechSynthesis.speak(utterance);
             }
             
-            // --- Event Handlers & Helpers (Remaining methods are unchanged) ---
+            // --- Event Handlers & Helpers ---
             setupEventListeners() {
                 this.elements.voiceBtn.addEventListener('click', () => this.toggleListening());
                 this.elements.stopBtn.addEventListener('click', () => this.stopAllProcesses());
@@ -869,9 +881,7 @@
                 this.showNotification('Voice Test શરૂ...', 'info');
             }
 
-
             async testApiConnection() {
-                // (Existing API test logic here)
                 if (!this.apiKey) {
                     this.showNotification('API Key જરૂરી છે', 'error'); return;
                 }
@@ -888,7 +898,7 @@
                     if (response.ok) {
                         this.updateConnectionStatus('Connected');
                         this.showNotification('API connection સફળ!', 'success');
-                        const successMessage = "API connection સફળ વિદુષી મદદ કરવા તૈયાર છે"; // Removed punctuation here too for TTS Test
+                        const successMessage = "API connection સફળ વિદુષી મદદ કરવા તૈયાર છે";
                         this.addMessage(successMessage, 'ai');
                         if (this.elements.autoSpeak.checked) { this.speakText(successMessage); }
                     } else {
@@ -921,3 +931,4 @@
     </script>
 </body>
 </html>
+
