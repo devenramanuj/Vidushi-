@@ -3,71 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>વિદુષી - AI Sanatan Bot</title>
+    <title>વિદુષી - Sanatan AI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-bg: #121212;
-            --secondary-bg: #1e1e1e;
-            --accent: #d35400; /* ભગવો રંગ */
-            --text: #ffffff;
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --text-color: #ffffff;
+            --accent-color: #ff5722; /* ભગવો */
         }
 
         body {
             margin: 0; padding: 0;
-            background-color: var(--primary-bg);
-            color: var(--text);
-            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        /* --- Header --- */
+        /* હેડર */
         header {
             padding: 15px;
             text-align: center;
-            background: var(--secondary-bg);
-            border-bottom: 2px solid var(--accent);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            z-index: 10;
+            background: var(--card-color);
+            border-bottom: 2px solid var(--accent-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+            position: relative;
         }
         h1 { margin: 0; font-weight: 500; letter-spacing: 1px; }
 
-        /* --- Main Avatar Area --- */
+        #settings-btn {
+            position: absolute; right: 15px; top: 15px;
+            background: none; border: none; color: white; font-size: 20px; cursor: pointer;
+        }
+
+        /* ફોટો એરિયા */
         #main-area {
             flex-grow: 1;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            padding: 20px;
             position: relative;
-            padding: 20px;
         }
 
-        /* સ્ત્રીનો ફોટો - હવે હલશે નહીં */
+        /* ભારતીય સ્ત્રીનો ફોટો */
         #avatar-img {
-            max-width: 100%;
-            max-height: 60vh; /* સ્ક્રીન પર માપસર દેખાય */
-            object-fit: contain;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
-            border-radius: 10px;
-            /* Shaking Animation કાઢી નાખ્યું છે */
+            width: 300px;
+            height: 300px;
+            object-fit: cover; /* ફોટો ગોળમાં બરાબર ફિટ થશે */
+            border-radius: 50%; /* ગોળ ફોટો */
+            border: 4px solid var(--accent-color);
+            box-shadow: 0 0 20px rgba(255, 87, 34, 0.3);
+            /* હલવાનું એનિમેશન બંધ છે */
         }
 
-        /* --- Controls --- */
+        /* સ્ટેટસ ટેક્સ્ટ */
+        #status-text {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #aaa;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
+            border-radius: 15px;
+        }
+
+        /* કંટ્રોલ બટનો */
         #controls {
-            background: var(--secondary-bg);
             padding: 20px;
-            border-top: 1px solid #333;
+            background: var(--card-color);
             display: flex;
             justify-content: center;
             gap: 20px;
-            position: relative;
+            border-top: 1px solid #333;
+            flex-shrink: 0;
         }
 
         .btn {
-            width: 65px; height: 65px;
+            width: 60px; height: 60px;
             border-radius: 50%;
             border: none;
             font-size: 24px;
@@ -77,66 +95,54 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        #mic-btn { background: var(--accent); box-shadow: 0 0 15px rgba(211, 84, 0, 0.4); }
+        #mic-btn { background: var(--accent-color); }
+        #mic-btn:active { transform: scale(0.95); }
         #mic-btn.listening { background: red; animation: pulse 1.5s infinite; }
+        
         #stop-btn { background: #444; }
 
-        /* --- Status Text --- */
-        #status-display {
-            position: absolute;
-            top: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            white-space: nowrap;
-        }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,0,0,0.5); } 100% { box-shadow: 0 0 0 15px rgba(255,0,0,0); } }
 
-        /* --- Settings Panel (Hidden) --- */
+        /* સેટિંગ્સ પેનલ */
         #settings-panel {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--secondary-bg);
-            padding: 20px;
+            background: rgba(0,0,0,0.95);
             display: none;
-            z-index: 20;
-            overflow-y: auto;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
         }
-        .setting-item { margin-bottom: 15px; }
-        .setting-item label { display: block; margin-bottom: 5px; color: #ccc; }
-        .setting-item input, .setting-item select {
-            width: 100%; padding: 10px;
-            background: #333; border: 1px solid #555;
-            color: white; border-radius: 5px;
+        .settings-box {
+            background: var(--card-color);
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%; max-width: 350px;
+            border: 1px solid #444;
         }
-        #close-settings {
-            background: transparent; border: none; color: white; font-size: 20px; cursor: pointer;
-            position: absolute; top: 15px; right: 15px;
+        .settings-box input {
+            width: 100%; padding: 10px; margin: 10px 0;
+            background: #333; border: none; color: white; border-radius: 5px;
+        }
+        .settings-box button {
+            width: 100%; padding: 10px; background: var(--accent-color);
+            border: none; color: white; border-radius: 5px; cursor: pointer;
         }
 
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,0,0,0.7); } 100% { box-shadow: 0 0 0 15px rgba(255,0,0,0); } }
-        
-        /* જવાબનું લખાણ છુપાવેલું છે */
-        #hidden-chat-log { display: none; }
-        
-        #settings-icon {
-            position: absolute; top: 20px; right: 20px;
-            background: none; border: none; color: white; font-size: 20px; cursor: pointer;
-        }
+        /* Hidden elements */
+        .chat-log { display: none; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>વિદુષી</h1>
-        <button id="settings-icon" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+        <button id="settings-btn" onclick="openSettings()"><i class="fas fa-cog"></i></button>
     </header>
 
     <div id="main-area">
-        <img id="avatar-img" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgOqWzHjN_Wl9XQW3gN_uQv6yZ7yZ7yZ7yZ7yZ7yZ7yZ7yZ7yZ7yZ7yZ7yZ7yZ7yZ7y/s1600/indian-woman-saree.png" alt="Indian Woman">
+        <img id="avatar-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Indian_woman_in_sari.jpg/480px-Indian_woman_in_sari.jpg" alt="Vidushi Avatar">
         
-        <div id="status-display">Key સેટ કરો</div>
+        <div id="status-text">Key સેટ કરો અને માઈક દબાવો</div>
     </div>
 
     <div id="controls">
@@ -144,148 +150,159 @@
         <button id="stop-btn" class="btn" onclick="stopAll()"><i class="fas fa-stop"></i></button>
     </div>
 
-    <div id="hidden-chat-log"></div>
-
     <div id="settings-panel">
-        <button id="close-settings" onclick="closeSettings()"><i class="fas fa-times"></i></button>
-        <h2>સેટિંગ્સ</h2>
-        <div class="setting-item">
-            <label>API Key</label>
-            <input type="password" id="api-key" placeholder="Enter Gemini Key">
+        <div class="settings-box">
+            <h3>સેટિંગ્સ</h3>
+            <label>API Key:</label>
+            <input type="password" id="api-key" placeholder="Enter Gemini Key here">
+            <button onclick="saveSettings()">Save & Close</button>
+            <button onclick="closeSettings()" style="background:#444; margin-top:5px;">Cancel</button>
         </div>
-        <button onclick="saveSettings()" style="width:100%; padding:10px; background:var(--accent); border:none; color:white; border-radius:5px;">Save</button>
     </div>
 
+    <div class="chat-log" id="chat-log"></div>
+
     <script>
-        // --- Configuration ---
-        // જો તમારી પાસે બે ફોટા હોય, તો અહીં તેનું નામ લખો:
-        // const IMAGE_SILENT = "silent.png";
-        // const IMAGE_TALKING = "talking.png";
-        
-        // અત્યારે ઓનલાઇન લિંક મૂકી છે (એક જ ફોટો છે એટલે હલશે નહીં, પણ ગંદુ નહીં લાગે)
-        const IMAGE_SILENT = "https://cdn.pixabay.com/photo/2024/05/20/16/52/ai-generated-8775235_1280.png"; 
-        const IMAGE_TALKING = "https://cdn.pixabay.com/photo/2024/05/20/16/52/ai-generated-8775235_1280.png"; // જો બીજો ફોટો હોય તો અહીં લિંક મૂકવી
-        
-        // --- Variables ---
+        // --- 1. Variables & Setup ---
+        const micBtn = document.getElementById('mic-btn');
+        const statusText = document.getElementById('status-text');
         let recognition;
         let isListening = false;
-        let talkingInterval;
-        const imgElement = document.getElementById('avatar-img');
-        const statusText = document.getElementById('status-display');
-        
-        // --- Load Settings ---
-        const savedKey = localStorage.getItem('vidushi_key');
-        if(savedKey) document.getElementById('api-key').value = savedKey;
 
-        // --- Setup Speech Recognition ---
+        // લોકલ સ્ટોરેજમાંથી કી લાવો
+        const storedKey = localStorage.getItem('vidushi_api_key');
+        if(storedKey) document.getElementById('api-key').value = storedKey;
+
+        // --- 2. Speech Recognition ---
         if ('webkitSpeechRecognition' in window) {
             recognition = new webkitSpeechRecognition();
-            recognition.lang = 'gu-IN';
+            recognition.lang = 'gu-IN'; // ગુજરાતી
             recognition.continuous = false;
-            
+            recognition.interimResults = false;
+
             recognition.onstart = () => {
                 isListening = true;
-                document.getElementById('mic-btn').classList.add('listening');
+                micBtn.classList.add('listening');
                 statusText.innerText = "સાંભળું છું...";
             };
-            
+
             recognition.onend = () => {
                 isListening = false;
-                document.getElementById('mic-btn').classList.remove('listening');
+                micBtn.classList.remove('listening');
                 statusText.innerText = "વિચારું છું...";
             };
 
             recognition.onresult = async (event) => {
-                const text = event.results[0][0].transcript;
-                console.log("User:", text);
-                await getGeminiResponse(text);
+                const transcript = event.results[0][0].transcript;
+                console.log("User said:", transcript);
+                await getGeminiResponse(transcript);
             };
+            
+            recognition.onerror = (e) => {
+                console.error(e);
+                statusText.innerText = "ફરી પ્રયાસ કરો";
+                micBtn.classList.remove('listening');
+                isListening = false;
+            };
+        } else {
+            alert("તમારા બ્રાઉઝરમાં સ્પીચ ફીચર નથી.");
         }
 
-        function toggleMic() {
-            if(!localStorage.getItem('vidushi_key')) { alert("પહેલા સેટિંગમાં જઈને Key નાખો."); openSettings(); return; }
-            if(isListening) recognition.stop();
-            else recognition.start();
-        }
+        // --- 3. Gemini API ---
+        async function getGeminiResponse(userText) {
+            const apiKey = localStorage.getItem('vidushi_api_key');
+            if (!apiKey) {
+                alert("Please set API Key in settings!");
+                openSettings();
+                return;
+            }
 
-        function stopAll() {
-            window.speechSynthesis.cancel();
-            recognition.stop();
-            clearInterval(talkingInterval);
-            imgElement.src = IMAGE_SILENT;
-            statusText.innerText = "શાંત";
-        }
-
-        // --- API Call ---
-        async function getGeminiResponse(prompt) {
-            const key = localStorage.getItem('vidushi_key');
-            const history = [
-                { role: "user", parts: [{ text: "તારું નામ વિદુષી છે. તું એક સનાતન ધર્મની જ્ઞાની ભારતીય સ્ત્રી છે. તારે આત્મીયતાથી ગુજરાતીમાં જવાબ આપવાનો છે." }] },
-                { role: "model", parts: [{ text: "જય શ્રી કૃષ્ણ. હું વિદુષી છું." }] },
-                { role: "user", parts: [{ text: prompt }] }
-            ];
+            // હિસ્ટ્રી અને પર્સનાલિટી
+            const prompt = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: "તારું નામ વિદુષી છે. તું સનાતન ધર્મની જ્ઞાની છે. તારે ગુજરાતીમાં ટૂંકા અને સચોટ જવાબ આપવાના છે. તું એક ભારતીય સ્ત્રી છે." }]
+                    },
+                    {
+                        role: "model",
+                        parts: [{ text: "જય શ્રી કૃષ્ણ! હું વિદુષી છું." }]
+                    },
+                    {
+                        role: "user",
+                        parts: [{ text: userText }]
+                    }
+                ]
+            };
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: history })
+                    body: JSON.stringify(prompt)
                 });
-                
-                const data = await response.json();
-                const reply = data.candidates[0].content.parts[0].text;
-                
-                speak(reply);
 
-            } catch (e) {
-                console.error(e);
-                statusText.innerText = "Error";
-                speak("માફ કરશો, કોઈ તકલીફ છે.");
+                const data = await response.json();
+                if(data.error) {
+                    statusText.innerText = "Error: Key Check કરો";
+                } else {
+                    const botReply = data.candidates[0].content.parts[0].text;
+                    speak(botReply);
+                }
+            } catch (error) {
+                console.error(error);
+                statusText.innerText = "ઇન્ટરનેટ એરર";
             }
         }
 
-        // --- TTS & Lip Sync Logic ---
+        // --- 4. TTS (બોલવું) ---
         function speak(text) {
+            // બોલતી વખતે ફોટો સ્થિર જ રહેશે (No Animation)
             window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // સ્વચ્છ લખાણ
+            const cleanText = text.replace(/[*#]/g, '');
+            
+            const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'gu-IN';
             
-            // બોલવાનું શરૂ થાય ત્યારે
             utterance.onstart = () => {
                 statusText.innerText = "બોલે છે...";
-                
-                // Lip Sync Logic: દર 200ms એ ફોટો બદલવો
-                // જો તમારી પાસે 2 ફોટા હશે તો જ આ કામ કરશે
-                talkingInterval = setInterval(() => {
-                    if (imgElement.src.includes(IMAGE_SILENT)) {
-                        imgElement.src = IMAGE_TALKING; // મોઢું ખોલો
-                    } else {
-                        imgElement.src = IMAGE_SILENT; // મોઢું બંધ કરો
-                    }
-                }, 200);
             };
-
-            // બોલવાનું પૂરું થાય ત્યારે
+            
             utterance.onend = () => {
-                clearInterval(talkingInterval); // બદલવાનું બંધ કરો
-                imgElement.src = IMAGE_SILENT; // મોઢું બંધ રાખો
-                statusText.innerText = "તૈયાર";
+                statusText.innerText = "શાંત";
             };
 
             window.speechSynthesis.speak(utterance);
         }
 
-        // --- Settings UI ---
-        function openSettings() { document.getElementById('settings-panel').style.display = 'block'; }
+        // --- 5. Controls ---
+        function toggleMic() {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                const key = localStorage.getItem('vidushi_api_key');
+                if(!key) { openSettings(); return; }
+                recognition.start();
+            }
+        }
+
+        function stopAll() {
+            window.speechSynthesis.cancel();
+            if(recognition) recognition.stop();
+            statusText.innerText = "બંધ";
+        }
+
+        // --- Settings Logic ---
+        function openSettings() { document.getElementById('settings-panel').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-panel').style.display = 'none'; }
         function saveSettings() {
-            localStorage.setItem('vidushi_key', document.getElementById('api-key').value);
+            const key = document.getElementById('api-key').value;
+            localStorage.setItem('vidushi_api_key', key);
             closeSettings();
             alert("Key Saved!");
         }
-        
-        // Initial Image Load (મેં અહીં એક સાત્વિક ભારતીય સ્ત્રીનો ફોટો મૂક્યો છે)
-        imgElement.src = "https://cdn.pixabay.com/photo/2024/05/20/16/52/ai-generated-8775235_1280.png";
 
     </script>
 </body>
