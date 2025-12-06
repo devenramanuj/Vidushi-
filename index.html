@@ -3,451 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>વિદુષી AI Assistant</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Vidushi - AI Chatbot</title>
     <style>
-        :root {
-            --primary-bg: #0f0f0f;
-            --secondary-bg: #1a1a1a;
-            --chat-bg: #2d2d2d;
-            --text-color: #e0e0e0;
-            --accent-color: #8b0000; /* Dark Red */
-            --glow-color: #ff4d4d;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        
+        /* --- CSS Styles --- */
         body {
-            background: var(--primary-bg);
-            height: 100vh;
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* --- HEADER --- */
-        header {
-            padding: 15px;
-            text-align: center;
-            background: var(--secondary-bg);
-            border-bottom: 2px solid var(--accent-color);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            z-index: 10;
-        }
-        
-        h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: 1px; }
-
-        /* --- MAIN AVATAR AREA (REALISTIC LOOK) --- */
-        .avatar-container {
-            flex-grow: 1;
+            margin: 0;
+            padding: 0;
+            background-color: #000; /* બ્લેક બેકગ્રાઉન્ડ */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            position: relative;
-            background: radial-gradient(circle at center, #2a2a2a 0%, #0f0f0f 70%);
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
         }
 
-        .vidushi-image-wrapper {
-            position: relative;
-            width: 220px; /* Slightly larger */
-            height: 220px;
-            border-radius: 50%;
-            padding: 5px;
-            background: linear-gradient(45deg, #444, #000);
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            transition: all 0.3s ease;
-        }
-
-        .vidushi-image {
+        /* અવતાર (ફોટો) માટેનું સેટિંગ */
+        #avatar-container {
             width: 100%;
             height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #333;
-            /* NEW: Realistic Indian Woman Image */
-            background-image: url('https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?q=80&w=800&auto=format&fit=crop'); 
-            background-size: cover;
-            background-position: center 20%; /* Adjusted to focus on face */
-        }
-
-        /* SPEAKING ANIMATION - Breathing & Glowing */
-        .vidushi-image-wrapper.speaking {
-            animation: breathe 2s infinite ease-in-out;
-            box-shadow: 0 0 30px var(--glow-color);
-            border: 2px solid var(--glow-color);
-        }
-
-        @keyframes breathe {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        /* --- CHAT OVERLAY --- */
-        .chat-overlay {
-            position: absolute;
-            bottom: 160px; /* Space for controls */
-            width: 90%;
-            max-height: 25%; /* Smaller chat area to focus on image */
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
-            padding: 15px;
-            backdrop-filter: blur(5px);
-            border: 1px solid #444;
-            text-align: center; /* Center text for cleaner look */
-        }
-
-        .message { margin-bottom: 8px; font-size: 15px; line-height: 1.5; text-shadow: 1px 1px 2px black; }
-        .message.ai { color: #fff; font-weight: 500; }
-        .message.user { color: #aaa; font-size: 13px; margin-top: 5px; font-style: italic; }
-
-        /* --- CONTROLS AREA --- */
-        .controls-area {
-            height: 150px;
-            background: var(--secondary-bg);
-            border-top: 1px solid #333;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            gap: 15px;
-            padding: 10px;
-            z-index: 10;
+            align-items: center;
+            position: relative;
         }
 
-        .status-text { font-size: 12px; color: #888; margin-bottom: 5px; }
-
-        .btn-group { display: flex; gap: 20px; align-items: center; }
-
-        .mic-btn {
-            width: 70px; height: 70px;
-            border-radius: 50%;
-            border: none;
-            background: #333;
-            color: white;
-            font-size: 28px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            transition: 0.2s;
+        #avatar-img {
+            max-width: 100%;
+            max-height: 90vh; /* સ્ક્રીન પર મોટો દેખાય */
+            object-fit: contain;
+            transition: transform 0.1s; /* સ્મૂધ એનિમેશન */
         }
 
-        .mic-btn:active { transform: scale(0.95); }
-        
-        .mic-btn.listening {
-            background: var(--accent-color);
-            animation: pulse-ring 1.5s infinite;
+        /* જ્યારે બોલે ત્યારે આ એનિમેશન થશે (Talking Effect) */
+        .speaking {
+            animation: talk-pulse 0.2s infinite alternate;
         }
 
-        .stop-btn {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            background: #222;
-            color: #ff4444;
-            border: 1px solid #ff4444;
-            font-size: 20px;
-            cursor: pointer;
+        @keyframes talk-pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.03); } /* ફોટો થોડો ઝૂમ થશે */
         }
 
-        .settings-btn {
+        /* માઈક બટનનું સેટિંગ */
+        #mic-btn {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            background: transparent;
-            border: none;
-            color: white;
+            bottom: 30px;
+            padding: 15px 30px;
             font-size: 20px;
+            border-radius: 50px;
+            border: none;
+            background-color: #ff5722; /* ભગવો રંગ */
+            color: white;
             cursor: pointer;
-            z-index: 20;
-        }
-
-        @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 rgba(139, 0, 0, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(139, 0, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(139, 0, 0, 0); }
-        }
-
-        /* Settings Page (Hidden by default) */
-        #settingsPage {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--secondary-bg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             z-index: 100;
-            padding: 20px;
-            overflow-y: auto;
         }
-        
-        .setting-item { margin-bottom: 15px; }
-        .setting-item label { display: block; margin-bottom: 5px; color: #aaa; }
-        .setting-item select, .setting-item input { 
-            width: 100%; padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 5px;
+
+        #mic-btn:active {
+            transform: scale(0.95);
         }
-        .close-settings {
-            background: var(--accent-color); color: white; border: none; padding: 10px 20px;
-            border-radius: 5px; margin-bottom: 20px; cursor: pointer;
+
+        /* સ્ટેટસ (સાંભળે છે કે નહીં) */
+        #status {
+            position: absolute;
+            top: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
         }
-        
-        .footer {
-            position: fixed; bottom: 5px; width: 100%; text-align: center;
-            font-size: 10px; color: #555; pointer-events: none;
-        }
+
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>વિદુષી</h1>
-        <button class="settings-btn" id="openSettings"><i class="fas fa-cog"></i></button>
-    </header>
-
-    <!-- Main Visual Area -->
-    <div class="avatar-container">
-        <!-- Image Container -->
-        <div class="vidushi-image-wrapper" id="avatarWrapper">
-            <div class="vidushi-image"></div>
-        </div>
-
-        <!-- Chat appears over the background -->
-        <div class="chat-overlay" id="chatOverlay">
-            <div class="message ai">જય શ્રી કૃષ્ણ 🙏! હું વિદુષી છું.</div>
-        </div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls-area">
-        <div class="status-text" id="statusText">તૈયાર છે</div>
-        <div class="btn-group">
-            <button class="mic-btn" id="micBtn"><i class="fas fa-microphone"></i></button>
-            <button class="stop-btn" id="stopBtn"><i class="fas fa-volume-xmark"></i></button>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">Developed by - Devendra Ramanuj | 9276595936</div>
-
-    <!-- Settings Page -->
-    <div id="settingsPage">
-        <button class="close-settings" id="closeSettings">← પાછા જાઓ</button>
-        <h2>સેટિંગ્સ</h2>
-        <div class="setting-item" style="border: 1px dashed #555; padding: 10px; margin-top: 10px;">
-            <label>API Key (સુરક્ષા માટે રિસેટ કરો)</label>
-            <button onclick="resetApiKey()" style="background: #444; color: white; padding: 5px; width: 100%;">Key બદલો</button>
-        </div>
-        <div class="setting-item">
-            <label>અવાજની ગતિ</label>
-            <input type="range" id="speechRate" min="0.5" max="1.5" step="0.1" value="1.0">
-        </div>
-        <div class="setting-item">
-            <label>સતત વાતચીત (Continuous)</label>
-            <input type="checkbox" id="continuousMode" checked> ચાલુ રાખો
-        </div>
-        <div class="setting-item">
-            <label>Screen Wake Lock</label>
-            <input type="checkbox" id="wakeLockToggle" checked> સ્ક્રીન ચાલુ રાખો
-        </div>
+    <div id="avatar-container">
+        <img id="avatar-img" src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png" alt="Vidushi Avatar">
+        
+        <div id="status">Tap button to start</div>
+        <button id="mic-btn" onclick="startListening()">🎤 વાત કરો</button>
     </div>
 
     <script>
-        // --- API KEY ---
-        // તમારી કી અહીં પેસ્ટ કરો
-        const SYSTEM_API_KEY = "તમારી_KEY_અહીં_પેસ્ટ_કરો"; 
-        // ---------------
+        // --- 1. સેટઅપ ---
+        const btn = document.getElementById("mic-btn");
+        const statusDisplay = document.getElementById("status");
+        const avatar = document.getElementById("avatar-img");
+        
+        // સ્પીચ રેકગ્નિશન (સાંભળવા માટે)
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        
+        recognition.lang = 'gu-IN'; // ગુજરાતી ભાષા
+        recognition.interimResults = false;
 
-        class VidushiApp {
-            constructor() {
-                this.apiKey = this.getApiKey();
-                this.recognition = null;
-                this.synth = window.speechSynthesis;
-                this.isListening = false;
-                this.wakeLock = null;
-                this.voices = [];
-                
-                this.ui = {
-                    micBtn: document.getElementById('micBtn'),
-                    stopBtn: document.getElementById('stopBtn'),
-                    status: document.getElementById('statusText'),
-                    avatar: document.getElementById('avatarWrapper'),
-                    chat: document.getElementById('chatOverlay'),
-                    settingsPage: document.getElementById('settingsPage'),
-                    rateInput: document.getElementById('speechRate')
-                };
+        // સ્પીચ સિન્થેસિસ (બોલવા માટે)
+        const synth = window.speechSynthesis;
+        let isFirstTime = true; // પહેલી વાર વાતચીત થાય છે?
 
-                this.init();
+        // --- 2. સાંભળવાની પ્રક્રિયા ---
+        function startListening() {
+            try {
+                recognition.start();
+                statusDisplay.innerText = "સાંભળું છું...";
+                btn.style.backgroundColor = "green";
+            } catch (e) {
+                console.log("Already listening or error");
             }
+        }
 
-            getApiKey() {
-                if (SYSTEM_API_KEY && !SYSTEM_API_KEY.includes("પેસ્ટ_કરો")) return SYSTEM_API_KEY;
-                return localStorage.getItem('geminiApiKey') || "";
-            }
-
-            init() {
-                // Event Listeners
-                this.ui.micBtn.onclick = () => this.toggleListen();
-                this.ui.stopBtn.onclick = () => this.stopAll();
-                document.getElementById('openSettings').onclick = () => this.ui.settingsPage.style.display = 'block';
-                document.getElementById('closeSettings').onclick = () => this.ui.settingsPage.style.display = 'none';
-                
-                // Initialize Speech Safely
-                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    this.recognition = new SpeechRecognition();
-                    this.recognition.lang = 'gu-IN';
-                    this.recognition.continuous = false;
-                    this.recognition.onstart = () => this.onListenStart();
-                    this.recognition.onend = () => this.onListenEnd();
-                    this.recognition.onresult = (e) => this.onListenResult(e);
-                    this.recognition.onerror = (e) => this.onListenError(e);
-                } else {
-                    alert("તમારો ફોન સ્પીચ સપોર્ટ નથી કરતો.");
-                }
-
-                // Check Key
-                if (!this.apiKey) setTimeout(() => this.promptKey(), 1000);
-
-                // Load Voices
-                setTimeout(() => { this.voices = this.synth.getVoices(); }, 500);
-                if (this.synth.onvoiceschanged !== undefined) this.synth.onvoiceschanged = () => { this.voices = this.synth.getVoices(); };
-            }
-
-            promptKey() {
-                const key = prompt("Gemini API Key નાખો:");
-                if (key) {
-                    this.apiKey = key;
-                    localStorage.setItem('geminiApiKey', key);
-                }
-            }
-
-            // --- CORE LOGIC ---
-
-            toggleListen() {
-                if (this.isListening) this.stopAll();
-                else {
-                    if(!this.apiKey) { this.promptKey(); return; }
-                    this.recognition.start();
-                }
-            }
-
-            onListenStart() {
-                this.isListening = true;
-                this.ui.micBtn.classList.add('listening');
-                this.ui.status.innerText = "સાંભળું છું...";
-                this.activateWakeLock();
-                // Clear old user message but keep AI message visible until new one comes
-            }
-
-            onListenEnd() {
-                this.isListening = false;
-                this.ui.micBtn.classList.remove('listening');
-            }
-
-            onListenResult(event) {
-                const text = event.results[0][0].transcript;
-                // Show user message
-                this.ui.chat.innerHTML = `<div class="message user">${text}</div>`;
-                this.processAI(text);
-            }
-
-            onListenError(e) {
-                console.error(e);
-                if(e.error === 'not-allowed') {
-                    this.ui.status.innerText = "Error: Mic Permission Denied";
-                    alert("માઈક્રોફોન પરમિશન નથી. એપ સેટિંગ્સમાં જઈને મંજૂરી આપો.");
-                } else {
-                    this.ui.status.innerText = "ફરી પ્રયત્ન કરો";
-                }
-                this.isListening = false;
-                this.ui.micBtn.classList.remove('listening');
-            }
-
-            async processAI(text) {
-                this.ui.status.innerText = "વિચારું છું...";
-                this.ui.avatar.classList.add('speaking'); // Gentle pulse while thinking
-
-                try {
-                    const response = await this.fetchGemini(text);
-                    // Update Chat with AI response
-                    this.ui.chat.innerHTML = `<div class="message ai">${response}</div>`;
-                    this.speak(response);
-                } catch (err) {
-                    this.ui.status.innerText = "Error: " + err.message;
-                    this.ui.avatar.classList.remove('speaking');
-                }
-            }
-
-            async fetchGemini(prompt) {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
-                
-                const now = new Date().toLocaleString('gu-IN');
-                const systemPrompt = `તારું નામ વિદુષી છે. તારું સર્જન દેવેન્દ્ર રામાનુજ દ્વારા થયું છે. તું એક ભારતીય સ્ત્રીની જેમ સંસ્કારી અને જ્ઞાની છે. તારે 'જય શ્રી કૃષ્ણ' થી વાત કરવી. અત્યારનો સમય: ${now}.`;
-
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                        systemInstruction: { parts: [{ text: systemPrompt }] }
-                    })
-                });
-                
-                const data = await res.json();
-                if(data.error) throw new Error(data.error.message);
-                return data.candidates[0].content.parts[0].text;
-            }
-
-            speak(text) {
-                this.synth.cancel();
-                
-                // Clean Text
-                const cleanText = text.replace(/[*#_`~>\[\]()]/g, "").replace(/https?:\/\/\S+/g, " લિંક ");
-                
-                const utterance = new SpeechSynthesisUtterance(cleanText);
-                utterance.lang = 'gu-IN';
-                utterance.rate = parseFloat(this.ui.rateInput.value);
-
-                // Animation ON
-                this.ui.status.innerText = "બોલે છે...";
-                this.ui.avatar.classList.add('speaking');
-
-                utterance.onend = () => {
-                    this.ui.avatar.classList.remove('speaking'); // Animation OFF
-                    this.ui.status.innerText = "તૈયાર છે";
-                    
-                    // Continuous Mode Check
-                    if (document.getElementById('continuousMode').checked) {
-                        setTimeout(() => this.recognition.start(), 500);
-                    }
-                };
-
-                this.synth.speak(utterance);
-            }
-
-            stopAll() {
-                this.recognition.stop();
-                this.synth.cancel();
-                this.isListening = false;
-                this.ui.avatar.classList.remove('speaking');
-                this.ui.status.innerText = "બંધ કર્યું";
-            }
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            statusDisplay.innerText = "વિચારું છું...";
+            btn.style.backgroundColor = "#ff5722";
             
-            async activateWakeLock() {
-                if (!document.getElementById('wakeLockToggle').checked) return;
-                try { if ('wakeLock' in navigator) this.wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+            // જવાબ તૈયાર કરો
+            generateResponse(transcript);
+        };
+
+        recognition.onerror = (event) => {
+            statusDisplay.innerText = "ફરીથી પ્રયાસ કરો";
+            btn.style.backgroundColor = "#ff5722";
+        };
+
+        // --- 3. મગજ (Logic) - અહીં જવાબો નક્કી થાય છે ---
+        function generateResponse(input) {
+            let reply = "";
+
+            // પહેલી વાર વાત કરે તો
+            if (isFirstTime) {
+                reply = "જય શ્રી કૃષ્ણ! હું વિદુષી છું. સનાતન ધર્મ વિશે આપ શું જાણવા માંગો છો?";
+                isFirstTime = false;
+            } 
+            // સામાન્ય જવાબો
+            else if (input.includes("કેમ છો") || input.includes("મજામાં")) {
+                reply = "હું મજામાં છું. પ્રભુની કૃપા છે. આપ કેમ છો?";
             }
+            else if (input.includes("ગીતા") || input.includes("કૃષ્ણ")) {
+                reply = "શ્રીમદ્ ભગવદ્ ગીતા એ મનુષ્યના જીવનનું માર્ગદર્શન છે. ભગવાન શ્રી કૃષ્ણે અર્જુનને ધર્મ અને કર્મના માર્ગ પર ચાલવાનો ઉપદેશ આપ્યો હતો.";
+            }
+            else if (input.includes("નામ શું")) {
+                reply = "મારું નામ વિદુષી છે. મને દેવેન્દ્રભાઈએ બનાવી છે.";
+            }
+            else {
+                // ડિફોલ્ટ જવાબ
+                reply = "માફ કરજો, હું સમજી ન શકી. કૃપા કરીને સનાતન ધર્મ વિશે પ્રશ્ન પૂછો.";
+            }
+
+            // બોલવાનું શરૂ કરો
+            speakOut(reply);
         }
 
-        function resetApiKey() {
-            localStorage.removeItem('geminiApiKey');
-            alert("કી રિસેટ થઈ. પેજ રિફ્રેશ કરો.");
-            location.reload();
+        // --- 4. બોલવાની પ્રક્રિયા અને લિપ સિંક (Animation) ---
+        function speakOut(text) {
+            // જો જૂનું બોલતી હોય તો બંધ કરો
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'gu-IN'; // ગુજરાતી અવાજ
+            
+            // અવાજનો સેટિંગ (ઝડપ અને પીચ)
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+
+            // જ્યારે બોલવાનું શરૂ થાય -> એનિમેશન ચાલુ
+            utterance.onstart = () => {
+                statusDisplay.innerText = "બોલે છે...";
+                avatar.classList.add("speaking"); // ફોટો હલશે
+            };
+
+            // જ્યારે બોલવાનું પૂરું થાય -> એનિમેશન બંધ
+            utterance.onend = () => {
+                statusDisplay.innerText = "શાંત";
+                avatar.classList.remove("speaking"); // ફોટો સ્થિર થશે
+                
+                // ઓટોમેટિક ફરી સાંભળવાનું શરૂ કરવું હોય તો નીચેની લાઈન અન-કોમેન્ટ કરો
+                // startListening(); 
+            };
+
+            synth.speak(utterance);
         }
 
-        // Start App
-        new VidushiApp();
     </script>
 </body>
 </html>
-
-
