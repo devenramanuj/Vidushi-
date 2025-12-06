@@ -3,185 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi - AI Chatbot</title>
+    <title>Vidushi AI - Sanatan Dharma Bot</title>
     <style>
-        /* --- CSS Styles --- */
+        /* --- CSS (દેખાવ) --- */
         body {
             margin: 0;
             padding: 0;
             background-color: #000; /* બ્લેક બેકગ્રાઉન્ડ */
+            color: white;
+            font-family: 'Arial', sans-serif;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
-            height: 100vh;
+            align-items: center;
             overflow: hidden;
-            font-family: 'Arial', sans-serif;
         }
 
-        /* અવતાર (ફોટો) માટેનું સેટિંગ */
+        /* અવતાર ઈમેજ કન્ટેનર */
         #avatar-container {
+            position: relative;
             width: 100%;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
         }
 
+        /* વિદુષીનો ફોટો */
         #avatar-img {
-            max-width: 100%;
-            max-height: 90vh; /* સ્ક્રીન પર મોટો દેખાય */
+            max-height: 85vh; /* સ્ક્રીન પર મોટો દેખાય */
+            max-width: 95%;
             object-fit: contain;
+            border-radius: 10px;
             transition: transform 0.1s; /* સ્મૂધ એનિમેશન */
         }
 
-        /* જ્યારે બોલે ત્યારે આ એનિમેશન થશે (Talking Effect) */
+        /* લિપ સિંક એનિમેશન (જ્યારે બોલે ત્યારે) */
         .speaking {
-            animation: talk-pulse 0.2s infinite alternate;
+            animation: talk-animation 0.2s infinite alternate;
         }
 
-        @keyframes talk-pulse {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.03); } /* ફોટો થોડો ઝૂમ થશે */
+        @keyframes talk-animation {
+            0% { transform: scale(1); filter: brightness(100%); }
+            100% { transform: scale(1.02); filter: brightness(110%); } /* થોડું ઝૂમ અને ચમક */
         }
 
-        /* માઈક બટનનું સેટિંગ */
-        #mic-btn {
+        /* કંટ્રોલ પેનલ (માઈક બટન) */
+        #controls {
             position: absolute;
             bottom: 30px;
-            padding: 15px 30px;
-            font-size: 20px;
-            border-radius: 50px;
-            border: none;
-            background-color: #ff5722; /* ભગવો રંગ */
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
 
-        #mic-btn:active {
-            transform: scale(0.95);
+        /* માઈક બટન */
+        #mic-btn {
+            background-color: #ff5722; /* ભગવો કલર */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            font-size: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 87, 34, 0.5);
+            transition: 0.3s;
         }
 
-        /* સ્ટેટસ (સાંભળે છે કે નહીં) */
-        #status {
+        #mic-btn.listening {
+            background-color: red;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
+
+        /* API Key Input (ફક્ત પહેલી વાર માટે) */
+        #api-input-container {
             position: absolute;
             top: 20px;
-            color: white;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 5px 15px;
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            color: black;
+            display: none; /* ડિફોલ્ટ છુપાયેલું */
+            z-index: 200;
+        }
+
+        /* સ્ટેટસ ટેક્સ્ટ (નાનું, સાઈડમાં) */
+        #status-text {
             font-size: 14px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        /* નોંધ: જવાબનું લખાણ (Response Text) આપણે અહીં CSS થી છુપાવી દીધું છે */
+        #response-text-hidden {
+            display: none; 
         }
 
     </style>
 </head>
 <body>
 
-    <div id="avatar-container">
-        <img id="avatar-img" src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png" alt="Vidushi Avatar">
-        
-        <div id="status">Tap button to start</div>
-        <button id="mic-btn" onclick="startListening()">🎤 વાત કરો</button>
+    <div id="api-input-container">
+        <label>Enter Gemini API Key:</label><br>
+        <input type="password" id="api-key-input" placeholder="Paste Key Here">
+        <button onclick="saveApiKey()">Save</button>
     </div>
 
+    <div id="avatar-container">
+        <img id="avatar-img" src="https://cdn-icons-png.flaticon.com/512/6997/6997662.png" alt="Vidushi">
+        
+        <div id="controls">
+            <button id="mic-btn" onclick="toggleListening()">🎤</button>
+            <div id="status-text">Tap to speak</div>
+        </div>
+    </div>
+
+    <div id="response-text-hidden"></div>
+
     <script>
-        // --- 1. સેટઅપ ---
-        const btn = document.getElementById("mic-btn");
-        const statusDisplay = document.getElementById("status");
+        // --- 1. વેરિએબલ્સ અને સેટઅપ ---
+        const micBtn = document.getElementById("mic-btn");
+        const statusText = document.getElementById("status-text");
         const avatar = document.getElementById("avatar-img");
         
-        // સ્પીચ રેકગ્નિશન (સાંભળવા માટે)
+        // Gemini API સેટિંગ્સ
+        let GEMINI_API_KEY = localStorage.getItem("vidushi_api_key");
+        
+        // જો API કી ન હોય તો ઇનપુટ બતાવો
+        if (!GEMINI_API_KEY) {
+            document.getElementById("api-input-container").style.display = "block";
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById("api-key-input").value;
+            if (input) {
+                localStorage.setItem("vidushi_api_key", input);
+                GEMINI_API_KEY = input;
+                document.getElementById("api-input-container").style.display = "none";
+                alert("API Key Saved! જય શ્રી કૃષ્ણ.");
+            }
+        }
+
+        // સ્પીચ રેકગ્નિશન (સાંભળવું)
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
-        
-        recognition.lang = 'gu-IN'; // ગુજરાતી ભાષા
+        recognition.lang = 'gu-IN'; // ગુજરાતી
+        recognition.continuous = false; // એક વાક્ય પતે એટલે અટકી જાય
         recognition.interimResults = false;
 
-        // સ્પીચ સિન્થેસિસ (બોલવા માટે)
+        // સ્પીચ સિન્થેસિસ (બોલવું)
         const synth = window.speechSynthesis;
-        let isFirstTime = true; // પહેલી વાર વાતચીત થાય છે?
+        let conversationHistory = [
+            {
+                role: "user",
+                parts: [{ text: "તારું નામ વિદુષી છે. તારા નિર્માતા દેવેન્દ્રભાઈ છે. તારે હંમેશા 'જય શ્રી કૃષ્ણ' થી વાત શરૂ કરવી જો પહેલી વાર હોય તો. તું સનાતન ધર્મની જ્ઞાની છે. તારે વિરામચિહ્નો (comma, full stop) બોલવાના નથી, માત્ર વાક્ય બોલવાના છે." }]
+            },
+            {
+                role: "model",
+                parts: [{ text: "જય શ્રી કૃષ્ણ! હું વિદુષી છું. દેવેન્દ્રભાઈએ મને બનાવી છે. બોલો, સનાતન ધર્મ વિશે શું જાણવું છે?" }]
+            }
+        ];
 
-        // --- 2. સાંભળવાની પ્રક્રિયા ---
-        function startListening() {
-            try {
+        let isListening = false;
+
+        // --- 2. ફંક્શન્સ (Logic) ---
+
+        function toggleListening() {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                if(!GEMINI_API_KEY) { alert("પહેલા API Key નાખો!"); return; }
                 recognition.start();
-                statusDisplay.innerText = "સાંભળું છું...";
-                btn.style.backgroundColor = "green";
-            } catch (e) {
-                console.log("Already listening or error");
             }
         }
 
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript.toLowerCase();
-            statusDisplay.innerText = "વિચારું છું...";
-            btn.style.backgroundColor = "#ff5722";
+        // જ્યારે સાંભળવાનું શરૂ થાય
+        recognition.onstart = () => {
+            isListening = true;
+            micBtn.classList.add("listening");
+            statusText.innerText = "સાંભળું છું...";
+        };
+
+        // જ્યારે સાંભળવાનું બંધ થાય
+        recognition.onend = () => {
+            isListening = false;
+            micBtn.classList.remove("listening");
+            statusText.innerText = "વિચારું છું...";
+        };
+
+        // જ્યારે અવાજ ઓળખાય (Result)
+        recognition.onresult = async (event) => {
+            const transcript = event.results[0][0].transcript;
+            console.log("User said:", transcript);
             
-            // જવાબ તૈયાર કરો
-            generateResponse(transcript);
+            // Gemini API ને કોલ કરો
+            await callGeminiAPI(transcript);
         };
 
-        recognition.onerror = (event) => {
-            statusDisplay.innerText = "ફરીથી પ્રયાસ કરો";
-            btn.style.backgroundColor = "#ff5722";
-        };
+        // --- 3. GEMINI API CALL ---
+        async function callGeminiAPI(userText) {
+            // હિસ્ટ્રીમાં યુઝરનો પ્રશ્ન ઉમેરો
+            conversationHistory.push({ role: "user", parts: [{ text: userText }] });
 
-        // --- 3. મગજ (Logic) - અહીં જવાબો નક્કી થાય છે ---
-        function generateResponse(input) {
-            let reply = "";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-            // પહેલી વાર વાત કરે તો
-            if (isFirstTime) {
-                reply = "જય શ્રી કૃષ્ણ! હું વિદુષી છું. સનાતન ધર્મ વિશે આપ શું જાણવા માંગો છો?";
-                isFirstTime = false;
-            } 
-            // સામાન્ય જવાબો
-            else if (input.includes("કેમ છો") || input.includes("મજામાં")) {
-                reply = "હું મજામાં છું. પ્રભુની કૃપા છે. આપ કેમ છો?";
-            }
-            else if (input.includes("ગીતા") || input.includes("કૃષ્ણ")) {
-                reply = "શ્રીમદ્ ભગવદ્ ગીતા એ મનુષ્યના જીવનનું માર્ગદર્શન છે. ભગવાન શ્રી કૃષ્ણે અર્જુનને ધર્મ અને કર્મના માર્ગ પર ચાલવાનો ઉપદેશ આપ્યો હતો.";
-            }
-            else if (input.includes("નામ શું")) {
-                reply = "મારું નામ વિદુષી છે. મને દેવેન્દ્રભાઈએ બનાવી છે.";
-            }
-            else {
-                // ડિફોલ્ટ જવાબ
-                reply = "માફ કરજો, હું સમજી ન શકી. કૃપા કરીને સનાતન ધર્મ વિશે પ્રશ્ન પૂછો.";
-            }
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: conversationHistory
+                    })
+                });
 
-            // બોલવાનું શરૂ કરો
-            speakOut(reply);
+                const data = await response.json();
+                const botReply = data.candidates[0].content.parts[0].text;
+
+                // હિસ્ટ્રીમાં બોટનો જવાબ ઉમેરો
+                conversationHistory.push({ role: "model", parts: [{ text: botReply }] });
+
+                // જવાબ બોલો
+                speakOut(botReply);
+
+            } catch (error) {
+                console.error("Error:", error);
+                statusText.innerText = "ભૂલ આવી. ફરી પ્રયાસ કરો.";
+                speakOut("ક્ષમા કરશો, ટેકનિકલ ખામી આવી છે.");
+            }
         }
 
-        // --- 4. બોલવાની પ્રક્રિયા અને લિપ સિંક (Animation) ---
+        // --- 4. ટેક્સ્ટ ટુ સ્પીચ અને લિપ સિંક (Speaking Logic) ---
         function speakOut(text) {
-            // જો જૂનું બોલતી હોય તો બંધ કરો
-            synth.cancel();
+            // લખાણ સ્ક્રીન પર બતાવવાનું નથી, સીધું બોલવાનું છે
+            statusText.innerText = "વિદુષી બોલે છે...";
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'gu-IN'; // ગુજરાતી અવાજ
-            
-            // અવાજનો સેટિંગ (ઝડપ અને પીચ)
-            utterance.rate = 0.9;
-            utterance.pitch = 1.1;
+            // ટેક્સ્ટ સફાઈ: * કાઢી નાખવા અને વિરામચિહ્નો સાફ કરવા જેથી બોલે નહીં
+            let cleanText = text.replace(/\*/g, ''); 
+            // આપણે punctuation રાખીએ છીએ જેથી ગતિ (pause) જળવાય, પણ એન્જિન તેને બોલશે નહીં.
+            // જો Google TTS punctuation ના નામ બોલતું હોય (જેમ કે "comma"), તો નીચેની લાઈન વાપરો:
+            // cleanText = cleanText.replace(/[,.?!]/g, ' '); 
 
-            // જ્યારે બોલવાનું શરૂ થાય -> એનિમેશન ચાલુ
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'gu-IN'; 
+            utterance.rate = 1.0; 
+            utterance.pitch = 1.0;
+
+            // લિપ સિંક શરૂ
             utterance.onstart = () => {
-                statusDisplay.innerText = "બોલે છે...";
-                avatar.classList.add("speaking"); // ફોટો હલશે
+                avatar.classList.add("speaking"); // ફોટો હલવાનું ચાલુ
             };
 
-            // જ્યારે બોલવાનું પૂરું થાય -> એનિમેશન બંધ
+            // લિપ સિંક બંધ
             utterance.onend = () => {
-                statusDisplay.innerText = "શાંત";
-                avatar.classList.remove("speaking"); // ફોટો સ્થિર થશે
-                
-                // ઓટોમેટિક ફરી સાંભળવાનું શરૂ કરવું હોય તો નીચેની લાઈન અન-કોમેન્ટ કરો
-                // startListening(); 
+                avatar.classList.remove("speaking"); // ફોટો સ્થિર
+                statusText.innerText = "શાંત";
             };
 
             synth.speak(utterance);
