@@ -92,7 +92,7 @@
             position: relative;
         }
 
-        /* --- KEY CHANGE: Hiding the text messages list --- */
+        /* Hiding the text messages list */
         .chat-messages {
             display: none !important; /* લખાણ કાયમ માટે ગાયબ */
         }
@@ -109,10 +109,11 @@
 
         #avatar-image {
             max-width: 95%;
-            max-height: 60vh;
+            max-height: 65vh; /* ફોટો થોડો મોટો કર્યો */
             border-radius: 15px;
-            object-fit: contain;
+            object-fit: cover; /* ફોટો સરસ રીતે ફિટ થશે */
             transition: transform 0.2s ease-in-out;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
         /* --- Lip Sync Animation --- */
@@ -123,7 +124,7 @@
 
         @keyframes talk-pulse {
             0% { transform: scale(1); }
-            100% { transform: scale(1.05); } 
+            100% { transform: scale(1.04); } 
         }
 
         /* --- CONTROLS --- */
@@ -131,7 +132,7 @@
             padding: 15px 0;
             border-top: 1px solid var(--border-color);
             display: flex;
-            flex-direction: row; /* બટનો આડા રાખ્યા છે */
+            flex-direction: row; 
             justify-content: center;
             align-items: center;
             gap: 20px;
@@ -225,7 +226,7 @@
                     </div>
 
                     <div id="main-avatar-container">
-                        <img id="avatar-image" src="https://cdn-icons-png.flaticon.com/512/6997/6997662.png" alt="Vidushi Avatar">
+                        <img id="avatar-image" src="https://images.unsplash.com/photo-1621784563330-caee0b138a00?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3" alt="Vidushi Avatar">
                     </div>
 
                     <div class="chat-messages" id="chatMessages"></div>
@@ -548,15 +549,13 @@
                 this.stopListeningUI(); this.isProcessing = false; this.deactivateWakeLock(); this.updateConnectionStatus('Ready', 'બંધ કર્યું');
             }
             
-            // --- FIXED: addMessage Logic restored but hidden via CSS ---
+            // Hidden message logic
             addMessage(text, sender) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
                 const contentDiv = document.createElement('div');
                 contentDiv.textContent = text;
                 messageDiv.appendChild(contentDiv);
-                
-                // Add to hidden container to keep logic running smoothly
                 const container = document.getElementById('chatMessages');
                 if(container) {
                     container.appendChild(messageDiv);
