@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            /* Black and White/Dark Theme */
             --primary-bg: #121212;
             --secondary-bg: #1e1e1e;
             --chat-bg: #292929;
@@ -92,7 +91,6 @@
         }
         .user .message-content { background: #444; }
         
-        /* Typing Indicator */
         #typingIndicator .message-content { background: #222; width: 50px; text-align: center; padding: 8px 15px; }
         .typing-indicator-dot {
             width: 6px; height: 6px; background: #aaa; border-radius: 50%;
@@ -174,9 +172,6 @@
             border: 1px solid #444; border-radius: 6px; color: white; font-size: 14px;
         }
 
-        .model-selector button { width: auto; margin-right: 10px; margin-top: 5px; }
-        .model-btn.active { background: #555; border-color: var(--text-color); }
-        
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; }
@@ -275,12 +270,15 @@
                 </div>
                 
                 <div class="setting-group">
-                    <label><i class="fas fa-brain"></i> AI Model</label>
-                    <div class="model-selector">
-                        <button class="model-btn active" data-model="gemini-1.5-flash">Gemini 1.5 Flash (Standard)</button>
-                        <button class="model-btn" data-model="gemini-1.5-pro">Gemini 1.5 Pro</button>
-                    </div>
-                    <p style="font-size: 11px; color: #aaa; margin-top: 5px;">'Flash' ઝડપી છે. 'Pro' હોશિયાર છે.</p>
+                    <label><i class="fas fa-brain"></i> AI Model (પસંદ કરો)</label>
+                    <select id="modelSelect">
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (New Standard)</option>
+                        <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8b (Light)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (High Intelligence)</option>
+                        <option value="gemini-1.0-pro">Gemini 1.0 Pro (Old Stable - ભરોસેમંદ)</option>
+                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+                    </select>
+                    <p style="font-size: 11px; color: #aaa; margin-top: 5px;">જો 1.5 ન ચાલે, તો "Gemini 1.0 Pro" પસંદ કરજો.</p>
                 </div>
                 
                 <div class="setting-group">
@@ -321,14 +319,9 @@
                 this.elements = Object.fromEntries(Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el]));
                 this.apiKey = localStorage.getItem('geminiApiKey');
                 
-                let savedModel = localStorage.getItem('geminiModel');
-                const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro'];
-                if (!savedModel || !validModels.includes(savedModel)) {
-                    savedModel = 'gemini-1.5-flash';
-                    localStorage.setItem('geminiModel', savedModel);
-                }
-                this.currentModel = savedModel;
-
+                // Get saved model or default to 1.5 Flash
+                this.currentModel = localStorage.getItem('geminiModel') || 'gemini-1.5-flash';
+                
                 this.isProcessing = false;
                 this.isListening = false;
                 this.recognition = null;
@@ -383,12 +376,11 @@
                 this.elements.continuousMode.checked = localStorage.getItem('geminiContinuousMode') === 'true';
                 const wakeLockSetting = localStorage.getItem('geminiScreenWakeLock');
                 this.elements.screenWakeLock.checked = wakeLockSetting === null ? true : (wakeLockSetting === 'true');
-                if (this.apiKey) { this.elements.apiKey.value = '•'.repeat(32); }
                 
-                document.querySelectorAll('.model-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    if(btn.dataset.model === this.currentModel) { btn.classList.add('active'); }
-                });
+                // Set the select dropdown value
+                this.elements.modelSelect.value = this.currentModel;
+
+                if (this.apiKey) { this.elements.apiKey.value = '•'.repeat(32); }
             }
 
             saveSettings() {
@@ -566,18 +558,13 @@
                 this.elements.backToChatBtn.addEventListener('click', () => this.togglePage('chat'));
                 this.elements.saveApiKey.addEventListener('click', () => this.handleApiKeySave());
                 
-                // --- FIXED TEST BUTTON LOGIC ---
                 this.elements.testApiBtn.addEventListener('click', async () => {
                     const btn = this.elements.testApiBtn;
                     const originalText = '<i class="fas fa-bolt"></i> API Test';
                     
-                    // Use entered key directly if not saved yet
                     let keyToTest = this.apiKey;
                     const inputKey = this.elements.apiKey.value.trim();
-                    
-                    if (!keyToTest && inputKey.startsWith('AIza')) {
-                        keyToTest = inputKey;
-                    }
+                    if (!keyToTest && inputKey.startsWith('AIza')) { keyToTest = inputKey; }
 
                     if (!keyToTest) {
                         btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Key નાખો';
@@ -589,7 +576,8 @@
                     btn.disabled = true;
 
                     try {
-                        const model = this.currentModel || 'gemini-1.5-flash';
+                        const model = this.currentModel;
+                        // Use keyToTest here
                         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToTest}`;
                         const response = await fetch(url, {
                             method: 'POST',
@@ -625,13 +613,13 @@
                 ['language', 'voice', 'autoSpeak', 'continuousMode', 'screenWakeLock'].forEach(id => {
                     this.elements[id].addEventListener('change', () => this.saveSettings());
                 });
-                document.querySelectorAll('.model-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        this.currentModel = e.currentTarget.dataset.model;
-                        this.saveSettings();
-                        this.loadSettings();
-                    });
+
+                // Listen for Model Select changes
+                this.elements.modelSelect.addEventListener('change', (e) => {
+                    this.currentModel = e.target.value;
+                    this.saveSettings();
                 });
+
                 document.getElementById('toggleApiKey').addEventListener('click', () => {
                     const input = this.elements.apiKey;
                     input.type = input.type === 'password' ? 'text' : 'password';
