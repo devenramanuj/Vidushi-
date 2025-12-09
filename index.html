@@ -277,9 +277,10 @@
                 <div class="setting-group">
                     <label><i class="fas fa-brain"></i> AI Model</label>
                     <div class="model-selector">
-                        <button class="model-btn active" data-model="gemini-1.5-flash">Flash (ઝડપી)</button>
-                        <button class="model-btn" data-model="gemini-1.5-pro">Pro (શક્તિશાળી)</button>
+                        <button class="model-btn active" data-model="gemini-pro">Pro (Stable)</button>
+                        <button class="model-btn" data-model="gemini-1.5-flash">Flash (New)</button>
                     </div>
+                    <p style="font-size: 11px; color: #aaa; margin-top: 5px;">જો Flash માં Error આવે તો Pro પસંદ કરો.</p>
                 </div>
                 
                 <div class="setting-group">
@@ -319,8 +320,8 @@
             constructor() {
                 this.elements = Object.fromEntries(Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el]));
                 this.apiKey = localStorage.getItem('geminiApiKey');
-                // Updated default model to gemini-1.5-flash which is currently valid
-                this.currentModel = localStorage.getItem('geminiModel') || 'gemini-1.5-flash';
+                // DEFAULT CHANGED TO 'gemini-pro' FOR STABILITY
+                this.currentModel = localStorage.getItem('geminiModel') || 'gemini-pro';
                 this.isProcessing = false;
                 this.isListening = false;
                 this.recognition = null;
@@ -333,6 +334,12 @@
             }
 
             initialize() {
+                // FORCE RESET if stored model is invalid or causing issues (Optional safety)
+                if(this.currentModel.includes('2.5')) {
+                    this.currentModel = 'gemini-pro';
+                    localStorage.setItem('geminiModel', 'gemini-pro');
+                }
+
                 this.loadSettings();
                 this.setupEventListeners();
                 this.initializeSpeech();
@@ -376,8 +383,13 @@
                 const wakeLockSetting = localStorage.getItem('geminiScreenWakeLock');
                 this.elements.screenWakeLock.checked = wakeLockSetting === null ? true : (wakeLockSetting === 'true');
                 if (this.apiKey) { this.elements.apiKey.value = '•'.repeat(32); }
+                
+                // Update Model Buttons
                 document.querySelectorAll('.model-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.model === this.currentModel);
+                    btn.classList.remove('active');
+                    if(btn.dataset.model === this.currentModel) {
+                        btn.classList.add('active');
+                    }
                 });
             }
 
@@ -471,7 +483,8 @@
             }
 
             async callGeminiAPI(userMessage) {
-                // Ensure the model exists. Using gemini-1.5-flash as safe default.
+                // Use default 'gemini-pro' if not set, or whatever is in currentModel
+                // 'gemini-pro' is universally supported.
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
                 
                 const systemInstruction = {
@@ -567,10 +580,9 @@
                 });
                 document.querySelectorAll('.model-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
-                        e.currentTarget.classList.add('active');
                         this.currentModel = e.currentTarget.dataset.model;
                         this.saveSettings();
+                        this.loadSettings(); // update UI
                     });
                 });
                 document.getElementById('toggleApiKey').addEventListener('click', () => {
