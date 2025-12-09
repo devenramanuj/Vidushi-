@@ -3,243 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>વિદુષી AI - Video Mode</title>
+    <title>Vidushi AI - Full Screen</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- RESET & BASIC --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        
+        /* --- BASIC RESET --- */
         body, html {
-            height: 100%;
-            width: 100%;
-            overflow: hidden; /* સ્ક્રોલ બંધ */
-            background-color: #000; /* જો વિડીયો ન ચાલે તો કાળું */
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'Segoe UI', sans-serif;
         }
 
-        /* --- VIDEO BACKGROUND (FULL SCREEN) --- */
-        #video-background {
+        /* --- 1. VIDEO LAYER (FULL CLEAR) --- */
+        #video-container {
             position: fixed;
-            top: 0; 
-            left: 0;
-            width: 100%; 
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 1; /* સૌથી પાછળ */
         }
 
         video {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover; /* આખી સ્ક્રીનમાં ફિટ */
+            filter: brightness(1.0); /* ઓરીજીનલ બ્રાઈટનેસ */
         }
 
-        #talking-video { display: none; } /* શરૂઆતમાં બંધ */
+        /* Talking video hidden initially */
+        #talking-video { display: none; }
 
-        /* --- CHAT CONTAINER (GLASS EFFECT) --- */
-        .container {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 95%;
-            max-width: 600px;
-            height: 85vh;
-            /* અર્ધ-પારદર્શક બેકગ્રાઉન્ડ જેથી વિડીયો દેખાય */
-            background: rgba(0, 0, 0, 0.4); 
-            backdrop-filter: blur(5px); /* પાછળનો વિડીયો સહેજ બ્લર */
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            z-index: 10; /* વિડીયોની ઉપર */
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-
-        /* --- HEADER & FOOTER --- */
-        header {
-            text-align: center;
-            padding: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+        /* --- 2. CONTROLS LAYER --- */
+        
+        /* Settings Button (Top Right) */
+        #settings-btn {
+            position: fixed;
+            top: 20px; right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.4); /* થોડું ડાર્ક જેથી દેખાય */
             color: white;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Mic Button (Bottom Center) */
+        #mic-wrapper {
+            position: fixed;
+            bottom: 40px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        #status-text {
+            color: white;
+            font-weight: bold;
             text-shadow: 2px 2px 4px black;
+            margin-bottom: 10px;
+            font-size: 16px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 10px;
+            border-radius: 10px;
         }
 
-        .footer {
-            text-align: center;
-            padding: 10px;
-            font-size: 12px;
-            color: rgba(255,255,255,0.7);
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        /* --- PAGES --- */
-        .content-area { flex: 1; position: relative; overflow: hidden; }
-        #chatPage, #settingsPage {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-        }
-        #settingsPage { display: none; background: rgba(0, 0, 0, 0.9); z-index: 20; padding: 20px; overflow-y: auto;}
-
-        /* --- CHAT AREA --- */
-        .chat-container { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        
-        .message { display: flex; gap: 10px; align-items: flex-end; }
-        .message.user { justify-content: flex-end; }
-        
-        .message-content {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 15px;
-            border-radius: 15px;
-            color: white;
-            max-width: 80%;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .user .message-content { background: rgba(0, 255, 0, 0.2); }
-
-        /* --- VOICE CONTROLS --- */
-        .voice-controls {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            /* કંટ્રોલ એરિયા થોડો ડાર્ક જેથી બટન દેખાય */
-            background: rgba(0,0,0,0.3); 
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .voice-btn {
+        #mic-btn {
             width: 70px; height: 70px;
             border-radius: 50%;
-            border: 2px solid white;
-            background: rgba(255, 69, 0, 0.8);
+            background: rgba(255, 69, 0, 0.9); /* ભગવો કલર */
+            border: 3px solid white;
             color: white;
-            font-size: 25px;
+            font-size: 30px;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(255, 69, 0, 0.5);
-            transition: 0.3s;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
         }
-        .voice-btn:hover { transform: scale(1.1); }
-        .voice-btn.listening { animation: pulse 1.5s infinite; background: red; }
-        
+
+        #mic-btn:active { transform: scale(0.95); }
+
+        /* Listening Animation */
+        .listening { animation: pulse 1.5s infinite; background-color: red !important; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
             70% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
 
-        /* --- SETTINGS BTN --- */
-        #toggleSettingsBtn {
-            position: absolute; top: 15px; right: 15px;
-            background: none; border: none; color: white;
-            font-size: 20px; cursor: pointer; z-index: 100;
+        /* --- 3. SETTINGS MODAL (Hidden by default) --- */
+        #settings-modal {
+            display: none; /* શરૂઆતમાં બંધ */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 200;
+            justify-content: center; align-items: center;
         }
 
-        /* --- Form Elements --- */
-        input, select { 
-            width: 100%; padding: 10px; margin: 5px 0 15px; 
-            background: #333; border: 1px solid #555; color: white; border-radius: 5px;
+        .settings-box {
+            background: #222;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%; max-width: 350px;
+            border: 1px solid #ff9933;
+            color: white;
+            text-align: center;
         }
-        label { color: #ff9933; font-weight: bold; }
-        .btn-save { width: 100%; padding: 10px; background: #ff9933; border: none; color: white; border-radius: 5px; cursor: pointer; }
-        
-        #status-text { color: yellow; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px black;}
+
+        .settings-box input, .settings-box select {
+            width: 100%; padding: 10px; margin: 10px 0;
+            background: #333; color: white; border: 1px solid #555; border-radius: 5px;
+        }
+
+        .btn-save {
+            width: 100%; padding: 12px;
+            background: #ff9933; border: none;
+            color: white; font-weight: bold; border-radius: 5px;
+            cursor: pointer; margin-top: 10px;
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="video-background">
+    <div id="video-container">
         <video id="silent-video" autoplay muted loop playsinline>
             <source src="silent.mp4" type="video/mp4">
         </video>
+        
         <video id="talking-video" muted loop playsinline>
             <source src="talking.mp4" type="video/mp4">
         </video>
     </div>
 
-    <div class="container">
-        <button id="toggleSettingsBtn"><i class="fas fa-cog"></i></button>
+    <div id="settings-btn" onclick="openSettings()">
+        <i class="fas fa-cog"></i>
+    </div>
 
-        <header>
-            <h1>વિદુષી</h1>
-        </header>
+    <div id="mic-wrapper">
+        <div id="status-text">Tap Mic</div>
+        <button id="mic-btn" onclick="handleMicClick()">
+            <i class="fas fa-microphone"></i>
+        </button>
+    </div>
 
-        <div class="content-area">
-            <div id="chatPage">
-                <div class="chat-container" id="chatMessages">
-                    <div class="message">
-                        <div class="message-content">જય શ્રી કૃષ્ણ 🙏! હું વિદુષી છું.</div>
-                    </div>
-                </div>
-                
-                <div class="voice-controls">
-                    <div id="status-text">માઈક દબાવો અને બોલો</div>
-                    <div style="display:flex; gap:20px;">
-                        <button class="voice-btn" id="voiceBtn"><i class="fas fa-microphone"></i></button>
-                        <button class="voice-btn" id="stopBtn" style="background: #333; width:50px; height:50px; font-size:20px;"><i class="fas fa-stop"></i></button>
-                    </div>
-                </div>
-            </div>
+    <div id="settings-modal">
+        <div class="settings-box">
+            <h2 style="margin-top:0;">Settings</h2>
+            
+            <label style="display:block; text-align:left; color:#ff9933;">API Key:</label>
+            <input type="password" id="apiKeyInput" placeholder="Paste Gemini API Key here">
+            
+            <label style="display:block; text-align:left; color:#ff9933;">Model:</label>
+            <select id="modelSelect">
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-1.5-pro" selected>Gemini 1.5 Pro (Best)</option>
+            </select>
 
-            <div id="settingsPage">
-                <h2 style="color:white; margin-bottom:20px;">સેટિંગ્સ</h2>
-                <button onclick="document.getElementById('settingsPage').style.display='none'; document.getElementById('chatPage').style.display='flex';" style="background:none; border:1px solid white; color:white; padding:5px 10px; margin-bottom:20px; border-radius:5px;">Back</button>
-
-                <label>API Key:</label>
-                <input type="password" id="apiKey" placeholder="Paste API Key">
-                
-                <label>Model:</label>
-                <select id="modelSelect">
-                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                    <option value="gemini-1.5-pro" selected>Gemini 1.5 Pro (Stable)</option>
-                </select>
-
-                <label>Speed:</label>
-                <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1">
-
-                <button class="btn-save" id="saveSettings">Save Settings</button>
-            </div>
+            <button class="btn-save" onclick="saveSettings()">Save & Close</button>
         </div>
-        
-        <footer class="footer">Devendra Ramanuj</footer>
     </div>
 
     <script>
-        // --- Logic ---
+        // --- ELEMENTS ---
         const silentVideo = document.getElementById('silent-video');
         const talkingVideo = document.getElementById('talking-video');
-        const voiceBtn = document.getElementById('voiceBtn');
+        const micBtn = document.getElementById('mic-btn');
         const statusText = document.getElementById('status-text');
-        const chatBox = document.getElementById('chatMessages');
+        const settingsModal = document.getElementById('settings-modal');
 
-        // Load Settings
+        // --- LOAD SETTINGS ---
         let apiKey = localStorage.getItem('vidushi_key') || '';
-        let model = localStorage.getItem('vidushi_model') || 'gemini-1.5-pro';
-        
-        document.getElementById('apiKey').value = apiKey;
-        document.getElementById('modelSelect').value = model;
+        let currentModel = localStorage.getItem('vidushi_model') || 'gemini-1.5-pro';
 
-        // Save Settings
-        document.getElementById('saveSettings').addEventListener('click', () => {
-            apiKey = document.getElementById('apiKey').value.trim();
-            model = document.getElementById('modelSelect').value;
+        // --- SETTINGS FUNCTIONS ---
+        function openSettings() {
+            settingsModal.style.display = 'flex';
+            document.getElementById('apiKeyInput').value = apiKey;
+            document.getElementById('modelSelect').value = currentModel;
+        }
+
+        function saveSettings() {
+            apiKey = document.getElementById('apiKeyInput').value.trim();
+            currentModel = document.getElementById('modelSelect').value;
+            
+            if(!apiKey) {
+                alert("API Key નાખવી જરૂરી છે!");
+                return;
+            }
+
             localStorage.setItem('vidushi_key', apiKey);
-            localStorage.setItem('vidushi_model', model);
-            alert('સેટિંગ સેવ થઈ ગયું!');
-            document.getElementById('settingsPage').style.display='none';
-            document.getElementById('chatPage').style.display='flex';
-        });
+            localStorage.setItem('vidushi_model', currentModel);
+            settingsModal.style.display = 'none';
+        }
 
-        document.getElementById('toggleSettingsBtn').addEventListener('click', () => {
-            document.getElementById('chatPage').style.display='none';
-            document.getElementById('settingsPage').style.display='block';
-        });
-
-        // --- Video Sync ---
-        function setVideoTalking(isTalking) {
+        // --- VIDEO LIP SYNC ---
+        function setTalking(isTalking) {
             if (isTalking) {
                 silentVideo.style.display = 'none';
                 talkingVideo.style.display = 'block';
-                talkingVideo.play().catch(e => console.log(e));
+                talkingVideo.play().catch(e => console.log("Video Play Error:", e));
             } else {
                 silentVideo.style.display = 'block';
                 talkingVideo.style.display = 'none';
@@ -248,102 +215,117 @@
             }
         }
 
-        // --- Speech Recognition ---
+        // --- SPEECH RECOGNITION ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
-        
+
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
-            recognition.lang = 'gu-IN';
+            recognition.lang = 'gu-IN'; // ગુજરાતી
             recognition.continuous = false;
 
             recognition.onstart = () => {
-                voiceBtn.classList.add('listening');
+                micBtn.classList.add('listening');
                 statusText.innerText = "સાંભળું છું...";
             };
+
             recognition.onend = () => {
-                voiceBtn.classList.remove('listening');
+                micBtn.classList.remove('listening');
             };
-            recognition.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                addMessage(text, 'user');
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
                 statusText.innerText = "વિચારું છું...";
-                callGemini(text);
+                askGemini(text);
             };
+        } else {
+            statusText.innerText = "Mic Not Supported";
+            alert("તમારા બ્રાઉઝરમાં માઈક સપોર્ટ નથી.");
         }
 
-        voiceBtn.addEventListener('click', () => {
+        function handleMicClick() {
+            // જો અત્યારે બોલતી હોય તો બંધ કરો
             if (window.speechSynthesis.speaking) {
                 window.speechSynthesis.cancel();
-                setVideoTalking(false);
+                setTalking(false);
+                statusText.innerText = "Tap Mic";
                 return;
             }
-            if (recognition) recognition.start();
-        });
+            
+            // નહીંતર સાંભળવાનું શરૂ કરો
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.log("Mic already started");
+                }
+            } else {
+                alert("Please set API Key first!");
+                openSettings();
+            }
+        }
 
-        document.getElementById('stopBtn').addEventListener('click', () => {
-            window.speechSynthesis.cancel();
-            setVideoTalking(false);
-            statusText.innerText = "બંધ કર્યું";
-        });
-
-        // --- API Call ---
-        async function callGemini(text) {
+        // --- GEMINI API CALL ---
+        async function askGemini(userText) {
             if (!apiKey) {
-                alert("API Key સેટિંગમાં નાખો!");
+                alert("પહેલા સેટિંગમાં જઈને API Key નાખો.");
+                openSettings();
+                statusText.innerText = "Key Missing";
                 return;
             }
 
-            const prompt = `તારું નામ વિદુષી છે. જય શ્રી કૃષ્ણ થી શરૂઆત કરવી. જવાબ ગુજરાતીમાં આપવો. સનાતન ધર્મનું જ્ઞાન આપવું. જવાબમાં * કે # જેવા ચિન્હો ન વાપરવા. પ્રશ્ન: ${text}`;
+            // બોટનું વ્યક્તિત્વ
+            const prompt = `તારું નામ વિદુષી છે. જય શ્રી કૃષ્ણ થી શરૂઆત કરવી. સનાતન ધર્મ વિશે જ્ઞાન આપવું. જવાબ શુદ્ધ ગુજરાતીમાં, ટૂંકો અને મૌલિક હોવો જોઈએ. જવાબમાં કોઇ પણ ચિન્હો (*, #) ન વાપરવા. પ્રશ્ન: ${userText}`;
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
                 });
-                
+
                 const data = await response.json();
-                const reply = data.candidates[0].content.parts[0].text;
                 
-                addMessage(reply, 'ai');
-                speak(reply);
+                if (data.candidates && data.candidates[0].content) {
+                    const reply = data.candidates[0].content.parts[0].text;
+                    speak(reply);
+                } else {
+                    statusText.innerText = "Error!";
+                }
 
             } catch (error) {
                 console.error(error);
-                statusText.innerText = "Error!";
+                statusText.innerText = "Net/API Error";
             }
         }
 
-        // --- TTS & Lip Sync ---
+        // --- TTS (TEXT TO SPEECH) ---
         function speak(text) {
+            // ચિન્હો હટાવવા
             const cleanText = text.replace(/[*#_]/g, "");
+            
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'gu-IN';
             
             utterance.onstart = () => {
                 statusText.innerText = "બોલી રહી છું...";
-                setVideoTalking(true); // START VIDEO
+                setTalking(true); // વિડીયો બદલાશે
             };
-            
+
             utterance.onend = () => {
-                statusText.innerText = "માઈક દબાવો";
-                setVideoTalking(false); // STOP VIDEO
+                statusText.innerText = "Tap Mic";
+                setTalking(false); // પાછું સાયલન્ટ વિડીયો
             };
 
             window.speechSynthesis.speak(utterance);
         }
 
-        function addMessage(text, sender) {
-            const div = document.createElement('div');
-            div.className = `message ${sender}`;
-            div.innerHTML = `<div class="message-content">${text}</div>`;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+        // Init Check
+        if(!apiKey) {
+            statusText.innerText = "Set API Key";
         }
-
-        // Init
-        setVideoTalking(false);
     </script>
 </body>
 </html>
