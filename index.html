@@ -272,13 +272,12 @@
                 <div class="setting-group">
                     <label><i class="fas fa-brain"></i> AI Model (પસંદ કરો)</label>
                     <select id="modelSelect">
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (New Standard)</option>
-                        <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8b (Light)</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (High Intelligence)</option>
-                        <option value="gemini-1.0-pro">Gemini 1.0 Pro (Old Stable - ભરોસેમંદ)</option>
-                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (તમારી પસંદ)</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (તમારી પસંદ)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
                     </select>
-                    <p style="font-size: 11px; color: #aaa; margin-top: 5px;">જો 1.5 ન ચાલે, તો "Gemini 1.0 Pro" પસંદ કરજો.</p>
                 </div>
                 
                 <div class="setting-group">
@@ -319,8 +318,8 @@
                 this.elements = Object.fromEntries(Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el]));
                 this.apiKey = localStorage.getItem('geminiApiKey');
                 
-                // Get saved model or default to 1.5 Flash
-                this.currentModel = localStorage.getItem('geminiModel') || 'gemini-1.5-flash';
+                // Set default to 2.5-flash as requested by user
+                this.currentModel = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
                 
                 this.isProcessing = false;
                 this.isListening = false;
@@ -377,7 +376,7 @@
                 const wakeLockSetting = localStorage.getItem('geminiScreenWakeLock');
                 this.elements.screenWakeLock.checked = wakeLockSetting === null ? true : (wakeLockSetting === 'true');
                 
-                // Set the select dropdown value
+                // Ensure the dropdown has the correct selected value
                 this.elements.modelSelect.value = this.currentModel;
 
                 if (this.apiKey) { this.elements.apiKey.value = '•'.repeat(32); }
@@ -577,7 +576,6 @@
 
                     try {
                         const model = this.currentModel;
-                        // Use keyToTest here
                         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToTest}`;
                         const response = await fetch(url, {
                             method: 'POST',
