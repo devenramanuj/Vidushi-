@@ -7,9 +7,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            /* બેકગ્રાઉન્ડ પારદર્શક કર્યું છે જેથી વિડીયો દેખાય */
-            --primary-bg: #000000; 
-            --secondary-bg: rgba(30, 30, 30, 0.85); /* Glass effect */
+            /* સુધારો: બોડી બેકગ્રાઉન્ડ પારદર્શક કર્યું */
+            --primary-bg: transparent; 
+            --secondary-bg: rgba(30, 30, 30, 0.7); /* વધુ પારદર્શક જેથી વિડીયો દેખાય */
             --chat-bg: rgba(41, 41, 41, 0.9);
             --text-color: #ffffff;
             --accent-red: #8b0000;
@@ -23,24 +23,25 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
         body {
-            background: var(--primary-bg);
+            background: var(--primary-bg); /* બ્લેક કલર હટાવી દીધો */
             min-height: 100vh;
             color: var(--text-color);
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
-            overflow: hidden; /* વિડીયો માટે સ્ક્રોલ બંધ */
+            overflow: hidden; 
         }
 
-        /* --- VIDEO BACKGROUND STYLES --- */
+        /* --- VIDEO BACKGROUND --- */
         #video-bg-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1; /* બધાની પાછળ */
+            z-index: -10; /* સૌથી પાછળ */
+            background-color: black; /* જો વિડીયો લોડ ન થાય તો બ્લેક */
         }
 
         .bg-video {
@@ -56,7 +57,7 @@
         }
 
         #talking-video {
-            display: none; /* શરૂઆતમાં બંધ રહેશે */
+            display: none; 
         }
         /* --------------------------- */
         
@@ -72,7 +73,7 @@
             display: flex;
             flex-direction: column;
             height: 85vh;
-            backdrop-filter: blur(5px); /* પાછળ વિડીયો બ્લર દેખાય તે માટે */
+            backdrop-filter: blur(3px); 
         }
         
         header {
@@ -96,11 +97,11 @@
             height: 100%;
             position: absolute;
             top: 0; left: 0;
-            background: transparent; /* ટ્રાન્સપરન્ટ */
+            background: transparent; 
             transition: opacity 0.3s ease;
         }
 
-        #settingsPage { display: none; z-index: 10; overflow-y: auto; background: var(--secondary-bg); }
+        #settingsPage { display: none; z-index: 10; overflow-y: auto; background: rgba(30, 30, 30, 0.95); }
         
         .chat-container { flex-grow: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
         .chat-messages { flex-grow: 1; padding: 0 0 15px 0; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
@@ -224,7 +225,7 @@
     
     <div id="video-bg-container">
         <video id="silent-video" class="bg-video" autoplay muted loop playsinline>
-            <source src="Silent.mp4" type="video/mp4">
+            <source src="silent.mp4" type="video/mp4">
         </video>
         
         <video id="talking-video" class="bg-video" muted loop playsinline>
@@ -358,10 +359,9 @@
             constructor() {
                 this.elements = Object.fromEntries(Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el]));
                 
-                // --- Video Elements Get ---
+                // Video Elements
                 this.silentVideo = document.getElementById('silent-video');
                 this.talkingVideo = document.getElementById('talking-video');
-                // --------------------------
 
                 this.apiKey = localStorage.getItem('geminiApiKey');
                 
@@ -398,7 +398,7 @@
                 if (isTalking) {
                     this.silentVideo.style.display = 'none';
                     this.talkingVideo.style.display = 'block';
-                    this.talkingVideo.play().catch(e => console.log(e));
+                    this.talkingVideo.play().catch(e => console.log('Video play error:', e));
                 } else {
                     this.silentVideo.style.display = 'block';
                     this.talkingVideo.style.display = 'none';
