@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-bg: #121212;
-            --secondary-bg: #1e1e1e;
-            --chat-bg: #292929;
+            /* બેકગ્રાઉન્ડ પારદર્શક કર્યું છે જેથી વિડીયો દેખાય */
+            --primary-bg: #000000; 
+            --secondary-bg: rgba(30, 30, 30, 0.85); /* Glass effect */
+            --chat-bg: rgba(41, 41, 41, 0.9);
             --text-color: #ffffff;
             --accent-red: #8b0000;
             --border-color: #333333;
@@ -29,7 +30,35 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            overflow: hidden; /* વિડીયો માટે સ્ક્રોલ બંધ */
         }
+
+        /* --- VIDEO BACKGROUND STYLES --- */
+        #video-bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* બધાની પાછળ */
+        }
+
+        .bg-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: cover;
+        }
+
+        #talking-video {
+            display: none; /* શરૂઆતમાં બંધ રહેશે */
+        }
+        /* --------------------------- */
         
         .container {
             width: 100%;
@@ -43,10 +72,11 @@
             display: flex;
             flex-direction: column;
             height: 85vh;
+            backdrop-filter: blur(5px); /* પાછળ વિડીયો બ્લર દેખાય તે માટે */
         }
         
         header {
-            background: var(--secondary-bg);
+            background: rgba(30, 30, 30, 0.5);
             padding: 15px 20px;
             text-align: center;
             border-bottom: 1px solid var(--border-color);
@@ -66,11 +96,11 @@
             height: 100%;
             position: absolute;
             top: 0; left: 0;
-            background: var(--secondary-bg);
+            background: transparent; /* ટ્રાન્સપરન્ટ */
             transition: opacity 0.3s ease;
         }
 
-        #settingsPage { display: none; z-index: 10; overflow-y: auto; }
+        #settingsPage { display: none; z-index: 10; overflow-y: auto; background: var(--secondary-bg); }
         
         .chat-container { flex-grow: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
         .chat-messages { flex-grow: 1; padding: 0 0 15px 0; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
@@ -134,7 +164,7 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
 
-        .voice-status { font-size: 14px; color: #aaa; min-height: 20px; text-align: center; }
+        .voice-status { font-size: 14px; color: #aaa; min-height: 20px; text-align: center; font-weight: bold; text-shadow: 1px 1px 2px black; }
 
         .status-bar {
             display: flex; justify-content: space-between; align-items: center;
@@ -191,6 +221,17 @@
     </style>
 </head>
 <body>
+    
+    <div id="video-bg-container">
+        <video id="silent-video" class="bg-video" autoplay muted loop playsinline>
+            <source src="Silent.mp4" type="video/mp4">
+        </video>
+        
+        <video id="talking-video" class="bg-video" muted loop playsinline>
+            <source src="talking.mp4" type="video/mp4">
+        </video>
+    </div>
+
     <div class="container">
         <button id="toggleSettingsBtn" title="સેટિંગ્સ"><i class="fas fa-cog"></i></button>
 
@@ -316,6 +357,12 @@
         class GeminiAIAssistant {
             constructor() {
                 this.elements = Object.fromEntries(Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el]));
+                
+                // --- Video Elements Get ---
+                this.silentVideo = document.getElementById('silent-video');
+                this.talkingVideo = document.getElementById('talking-video');
+                // --------------------------
+
                 this.apiKey = localStorage.getItem('geminiApiKey');
                 
                 // Set default to 2.5-flash as requested by user
@@ -346,6 +393,21 @@
                 });
             }
             
+            // --- VIDEO CONTROL FUNCTION ---
+            setVideoTalking(isTalking) {
+                if (isTalking) {
+                    this.silentVideo.style.display = 'none';
+                    this.talkingVideo.style.display = 'block';
+                    this.talkingVideo.play().catch(e => console.log(e));
+                } else {
+                    this.silentVideo.style.display = 'block';
+                    this.talkingVideo.style.display = 'none';
+                    this.talkingVideo.pause();
+                    this.talkingVideo.currentTime = 0;
+                }
+            }
+            // -----------------------------
+
             async activateWakeLock() {
                 if (!this.elements.screenWakeLock.checked) return;
                 try {
@@ -509,6 +571,10 @@
                 this.activateWakeLock();
                 this.updateConnectionStatus('Speaking');
                 
+                // --- START LIP SYNC ---
+                this.setVideoTalking(true);
+                // ----------------------
+                
                 let cleanText = text.replace(/[*#_`~>\[\]()]/g, ""); 
                 cleanText = cleanText.replace(/https?:\/\/\S+/g, " લિંક ");
                 cleanText = cleanText.replace(/\s+/g, " ").trim();
@@ -526,6 +592,10 @@
                 }
                 
                 utterance.onend = () => {
+                    // --- STOP LIP SYNC ---
+                    this.setVideoTalking(false);
+                    // ---------------------
+
                     this.currentUtterance = null;
                     this.isProcessing = false;
                     if (this.elements.continuousMode.checked && this.shouldContinueListening) {
@@ -539,6 +609,9 @@
                 };
                 utterance.onerror = (e) => {
                     console.error('Speech Error:', e);
+                    // --- STOP LIP SYNC ON ERROR ---
+                    this.setVideoTalking(false);
+                    // -----------------------------
                     this.isProcessing = false;
                     this.deactivateWakeLock();
                 };
@@ -664,6 +737,8 @@
                 this.isProcessing = false;
                 this.deactivateWakeLock();
                 this.updateConnectionStatus('Ready', 'વાતચીત બંધ કરી');
+                // --- Stop Video ---
+                this.setVideoTalking(false);
             }
 
             addMessage(text, sender) {
