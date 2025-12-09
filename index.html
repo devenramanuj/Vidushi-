@@ -277,10 +277,10 @@
                 <div class="setting-group">
                     <label><i class="fas fa-brain"></i> AI Model</label>
                     <div class="model-selector">
-                        <button class="model-btn active" data-model="gemini-pro">Pro (Stable)</button>
-                        <button class="model-btn" data-model="gemini-1.5-flash">Flash (New)</button>
+                        <button class="model-btn active" data-model="gemini-1.5-flash">Gemini 1.5 Flash (Standard)</button>
+                        <button class="model-btn" data-model="gemini-1.5-pro">Gemini 1.5 Pro</button>
                     </div>
-                    <p style="font-size: 11px; color: #aaa; margin-top: 5px;">જો Flash માં Error આવે તો Pro પસંદ કરો.</p>
+                    <p style="font-size: 11px; color: #aaa; margin-top: 5px;">'Flash' ઝડપી છે. 'Pro' હોશિયાર છે.</p>
                 </div>
                 
                 <div class="setting-group">
@@ -320,8 +320,19 @@
             constructor() {
                 this.elements = Object.fromEntries(Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el]));
                 this.apiKey = localStorage.getItem('geminiApiKey');
-                // DEFAULT CHANGED TO 'gemini-pro' FOR STABILITY
-                this.currentModel = localStorage.getItem('geminiModel') || 'gemini-pro';
+                
+                // --- CRITICAL FIX: FORCE RESET MODEL TO VALID ONE ---
+                let savedModel = localStorage.getItem('geminiModel');
+                const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+                
+                if (!savedModel || !validModels.includes(savedModel)) {
+                    console.log('Resetting invalid model to gemini-1.5-flash');
+                    savedModel = 'gemini-1.5-flash';
+                    localStorage.setItem('geminiModel', savedModel);
+                }
+                this.currentModel = savedModel;
+                // ----------------------------------------------------
+
                 this.isProcessing = false;
                 this.isListening = false;
                 this.recognition = null;
@@ -334,12 +345,6 @@
             }
 
             initialize() {
-                // FORCE RESET if stored model is invalid or causing issues (Optional safety)
-                if(this.currentModel.includes('2.5')) {
-                    this.currentModel = 'gemini-pro';
-                    localStorage.setItem('geminiModel', 'gemini-pro');
-                }
-
                 this.loadSettings();
                 this.setupEventListeners();
                 this.initializeSpeech();
@@ -384,7 +389,7 @@
                 this.elements.screenWakeLock.checked = wakeLockSetting === null ? true : (wakeLockSetting === 'true');
                 if (this.apiKey) { this.elements.apiKey.value = '•'.repeat(32); }
                 
-                // Update Model Buttons
+                // Update Model Buttons UI
                 document.querySelectorAll('.model-btn').forEach(btn => {
                     btn.classList.remove('active');
                     if(btn.dataset.model === this.currentModel) {
@@ -483,8 +488,7 @@
             }
 
             async callGeminiAPI(userMessage) {
-                // Use default 'gemini-pro' if not set, or whatever is in currentModel
-                // 'gemini-pro' is universally supported.
+                // Endpoint uses v1beta which supports gemini-1.5-flash
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
                 
                 const systemInstruction = {
@@ -582,7 +586,7 @@
                     btn.addEventListener('click', (e) => {
                         this.currentModel = e.currentTarget.dataset.model;
                         this.saveSettings();
-                        this.loadSettings(); // update UI
+                        this.loadSettings(); // Update UI
                     });
                 });
                 document.getElementById('toggleApiKey').addEventListener('click', () => {
