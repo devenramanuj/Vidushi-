@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi AI (Final)</title>
+    <title>Vidushi AI (Gemini 2.5 Pro)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; margin: 0;}
@@ -56,7 +56,7 @@
 
     <div id="ui">
         <div class="header">
-            <h3>Vidushi AI</h3>
+            <h3>Vidushi AI (2.5 Pro)</h3>
             <button onclick="openSettings()" style="background:none; border:none; color:white; font-size:1.5rem;"><i class="fas fa-cog"></i></button>
         </div>
 
@@ -84,10 +84,9 @@
         <div class="input-group">
             <label>Model (Select Version)</label>
             <select id="model">
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro (જે ચાલે છે)</option>
+                <option value="gemini-2.5-pro" selected>Gemini 2.5 Pro (તમારી પસંદ)</option>
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
             </select>
         </div>
 
@@ -105,10 +104,10 @@
         // System Prompt
         const PROMPT = "You are Vidushi, a friendly Indian female assistant. Speak in Gujarati. Keep answers short, natural, and warm. No markdown symbols.";
 
-        // State
+        // State - DEFAULT IS NOW FORCED TO 2.5 PRO
         let config = {
             key: localStorage.getItem('v_key') || '',
-            model: localStorage.getItem('v_model') || 'gemini-2.5-pro' // Default set to 2.5 Pro
+            model: localStorage.getItem('v_model') || 'gemini-2.5-pro' 
         };
         let isListening = false;
 
@@ -119,7 +118,14 @@
 
         // Init UI
         document.getElementById('apiKey').value = config.key;
-        document.getElementById('model').value = config.model;
+        
+        // Ensure dropdown matches saved config, or defaults to 2.5-pro
+        const modelSelect = document.getElementById('model');
+        if(config.model) {
+            modelSelect.value = config.model;
+        } else {
+            modelSelect.value = 'gemini-2.5-pro';
+        }
 
         // Speech API
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -170,6 +176,7 @@
             addMsg("વિચારું છું...", 'ai');
             
             try {
+                // Using the specific model from config
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.key}`;
                 
                 const response = await fetch(url, {
@@ -249,15 +256,15 @@
             localStorage.setItem('v_key', config.key);
             localStorage.setItem('v_model', config.model);
             closeSettings();
-            addMsg("Settings Saved.", 'ai');
+            addMsg(`Settings Saved. Using ${config.model}`, 'ai');
         }
 
         async function testConnection() {
             const k = document.getElementById('apiKey').value;
-            const m = document.getElementById('model').value;
+            const m = document.getElementById('model').value; // Uses the dropdown value
             const msg = document.getElementById('testMsg');
             
-            msg.innerText = "Testing...";
+            msg.innerText = `Testing ${m}...`;
             msg.style.color = "yellow";
 
             try {
@@ -271,10 +278,10 @@
 
                 if(data.error) throw new Error(data.error.message);
 
-                msg.innerText = "✅ Success! Connected.";
+                msg.innerText = `✅ Success! ${m} is working.`;
                 msg.style.color = "#00ff00";
             } catch(e) {
-                msg.innerText = "❌ Failed: " + e.message;
+                msg.innerText = `❌ Failed: ${e.message}`;
                 msg.style.color = "red";
             }
         }
