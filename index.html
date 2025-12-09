@@ -3,39 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi Debugger</title>
+    <title>Vidushi AI (Final)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; margin: 0;}
+        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; margin: 0;}
         
         /* Video Background */
         #videoContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        video { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+        video { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; transition: transform 0.3s; }
+        video.speaking { transform: scale(1.05); filter: brightness(1.1); }
         
-        /* UI */
-        #ui { position: absolute; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
+        /* UI Layer */
+        #ui { position: absolute; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; pointer-events: none; }
         
-        .header { pointer-events: auto; padding: 15px; background: rgba(0,0,0,0.8); display: flex; justify-content: space-between; align-items: center; position: absolute; top: 0; width: 100%; }
+        .header { pointer-events: auto; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); display: flex; justify-content: space-between; align-items: center; }
         
-        #chat { flex-grow: 1; overflow-y: auto; padding: 20px; margin-bottom: 100px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+        #chat { flex-grow: 1; overflow-y: auto; padding: 20px; padding-bottom: 120px; display: flex; flex-direction: column; gap: 12px; pointer-events: auto; mask-image: linear-gradient(to top, black 80%, transparent 100%); }
         
-        .bubble { padding: 10px 15px; border-radius: 15px; max-width: 80%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
-        .bubble.user { align-self: flex-end; border-right: 3px solid cyan; }
-        .bubble.ai { align-self: flex-start; border-left: 3px solid #ff0055; }
-        .bubble.error { border: 1px solid red; color: #ff9999; }
+        .bubble { padding: 12px 18px; border-radius: 18px; max-width: 85%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); line-height: 1.4; animation: popIn 0.3s ease; text-shadow: 1px 1px 2px black; }
+        .bubble.user { align-self: flex-end; border-right: 3px solid #00ffff; text-align: right; }
+        .bubble.ai { align-self: flex-start; border-left: 3px solid #ff0055; background: rgba(255, 0, 85, 0.2); }
+        .bubble.error { border: 1px solid red; color: #ff9999; background: rgba(100,0,0,0.5); }
 
-        .controls { pointer-events: auto; position: absolute; bottom: 0; width: 100%; padding: 20px; background: linear-gradient(to top, black, transparent); display: flex; justify-content: center; gap: 20px; }
+        .controls { pointer-events: auto; position: absolute; bottom: 0; width: 100%; padding: 30px; background: linear-gradient(to top, black 20%, transparent); display: flex; justify-content: center; gap: 30px; }
         
-        .btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; cursor: pointer; background: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; }
-        #micBtn { background: #ff0055; box-shadow: 0 0 15px #ff0055; }
-        #micBtn.listening { background: white; color: #ff0055; animation: pulse 1s infinite; }
+        .btn { width: 65px; height: 65px; border-radius: 50%; border: none; font-size: 1.6rem; cursor: pointer; background: rgba(255,255,255,0.15); color: white; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+        .btn:active { transform: scale(0.9); }
+        #micBtn { background: #ff0055; box-shadow: 0 0 20px rgba(255,0,85,0.4); width: 80px; height: 80px; font-size: 2rem; }
+        #micBtn.listening { background: white; color: #ff0055; animation: pulse 1.5s infinite; }
 
-        /* Settings */
-        #settings { pointer-events: auto; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 20; padding: 20px; display: none; flex-direction: column; gap: 15px; }
-        input, select { width: 100%; padding: 15px; background: #222; border: 1px solid #444; color: white; border-radius: 5px; margin-top: 5px; }
-        label { color: #aaa; font-size: 0.9rem; }
+        /* Settings Panel */
+        #settings { pointer-events: auto; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #121212; z-index: 20; padding: 20px; display: none; flex-direction: column; gap: 20px; }
         
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .input-group label { display: block; color: #aaa; margin-bottom: 8px; }
+        .input-group input, .input-group select { width: 100%; padding: 14px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; font-size: 1rem; }
+        
+        .action-btn { padding: 15px; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; width: 100%; font-size: 1rem; margin-top: 10px; }
+        .test-btn { background: #ffbb00; color: black; }
+        .save-btn { background: #ff0055; color: white; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); } }
+        @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -48,83 +56,117 @@
 
     <div id="ui">
         <div class="header">
-            <h3>Vidushi Debug Mode</h3>
+            <h3>Vidushi AI</h3>
             <button onclick="openSettings()" style="background:none; border:none; color:white; font-size:1.5rem;"><i class="fas fa-cog"></i></button>
         </div>
 
         <div id="chat"></div>
 
         <div class="controls">
-            <button class="btn" onclick="location.reload()"><i class="fas fa-sync"></i></button>
+            <button class="btn" onclick="clearChat()"><i class="fas fa-eraser"></i></button>
             <button class="btn" id="micBtn" onclick="toggleMic()"><i class="fas fa-microphone"></i></button>
+            <button class="btn" onclick="stopAll()"><i class="fas fa-stop"></i></button>
         </div>
     </div>
 
     <div id="settings">
-        <div style="display:flex; justify-content:space-between;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2>Settings</h2>
-            <button onclick="closeSettings()" style="background:none; border:none; color:white; font-size:1.5rem;">X</button>
+            <button onclick="closeSettings()" style="background:none; border:none; color:white; font-size:1.5rem;"><i class="fas fa-times"></i></button>
         </div>
         
-        <div>
-            <label>API Key (Paste carefully)</label>
-            <input type="text" id="apiKey" placeholder="AIza...">
+        <div class="input-group">
+            <label>API Key (Paste Here)</label>
+            <input type="password" id="apiKey" placeholder="AIza...">
+            <button onclick="toggleKeyVisibility()" style="background:none; border:none; color:#aaa; margin-top:5px; cursor:pointer; font-size:0.8rem;">Show/Hide Key</button>
         </div>
 
-        <div>
-            <label>Model</label>
+        <div class="input-group">
+            <label>Model (Select Version)</label>
             <select id="model">
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Best)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro (જે ચાલે છે)</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
             </select>
         </div>
 
-        <button onclick="testConnection()" style="padding:15px; background:orange; border:none; color:black; font-weight:bold; cursor:pointer; border-radius:5px;">
-            <i class="fas fa-bolt"></i> Test Connection (દબાવો)
+        <button class="action-btn test-btn" onclick="testConnection()">
+            <i class="fas fa-bolt"></i> Test Connection
         </button>
+        <div id="testMsg" style="text-align:center; font-size:0.9rem; margin-top:-10px;"></div>
 
-        <button onclick="saveSettings()" style="padding:15px; background:#ff0055; border:none; color:white; font-weight:bold; cursor:pointer; border-radius:5px;">
+        <button class="action-btn save-btn" onclick="saveSettings()">
             Save & Close
         </button>
-        
-        <div id="testResult" style="margin-top:10px; font-size:0.9rem; color:yellow;"></div>
     </div>
 
     <script>
+        // System Prompt
+        const PROMPT = "You are Vidushi, a friendly Indian female assistant. Speak in Gujarati. Keep answers short, natural, and warm. No markdown symbols.";
+
+        // State
         let config = {
             key: localStorage.getItem('v_key') || '',
-            model: localStorage.getItem('v_model') || 'gemini-1.5-flash'
+            model: localStorage.getItem('v_model') || 'gemini-2.5-pro' // Default set to 2.5 Pro
         };
+        let isListening = false;
 
+        // Elements
         const vid = document.getElementById('vid');
         const chat = document.getElementById('chat');
         const micBtn = document.getElementById('micBtn');
 
-        // Initial Setup
+        // Init UI
         document.getElementById('apiKey').value = config.key;
         document.getElementById('model').value = config.model;
 
-        // Speech
-        const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
+        // Speech API
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new Recognition();
         recognition.lang = 'gu-IN';
-        recognition.onresult = (e) => {
-            const text = e.results[0][0].transcript;
-            addMsg(text, 'user');
-            askGemini(text);
-        };
-        recognition.onend = () => {
-            micBtn.classList.remove('listening');
-            vid.pause();
-        };
+        recognition.continuous = false;
+        
+        const synth = window.speechSynthesis;
+
+        // --- CORE FUNCTIONS ---
 
         function toggleMic() {
             if(!config.key) { openSettings(); return; }
-            micBtn.classList.add('listening');
-            try { recognition.start(); } catch(e) {}
-            vid.play(); // Mock listen animation
+
+            if(isListening) {
+                recognition.stop();
+            } else {
+                if(synth.speaking) stopAll();
+                try {
+                    recognition.start();
+                    isListening = true;
+                    micBtn.classList.add('listening');
+                    vid.play(); // Animation start
+                    addMsg("સાંભળું છું...", 'ai');
+                } catch(e) {
+                    console.error(e);
+                    alert("Mic Error");
+                }
+            }
         }
 
-        async function askGemini(text) {
+        recognition.onend = () => {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            // Remove 'listening' bubble
+            if(chat.lastChild && chat.lastChild.innerText === "સાંભળું છું...") chat.lastChild.remove();
+            
+            if(!synth.speaking) vid.pause();
+        };
+
+        recognition.onresult = async (e) => {
+            const text = e.results[0][0].transcript;
+            addMsg(text, 'user');
+            await getResponse(text);
+        };
+
+        async function getResponse(text) {
             addMsg("વિચારું છું...", 'ai');
             
             try {
@@ -134,18 +176,17 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
+                        systemInstruction: { parts: [{ text: PROMPT }] },
                         contents: [{ parts: [{ text: text }] }]
                     })
                 });
 
                 const data = await response.json();
 
-                // Remove loading
-                chat.lastChild.remove();
+                // Remove loading bubble
+                if(chat.lastChild.innerText === "વિચારું છું...") chat.lastChild.remove();
 
-                if(data.error) {
-                    throw new Error(data.error.message);
-                }
+                if(!response.ok) throw new Error(data.error?.message || "API Error");
 
                 const reply = data.candidates[0].content.parts[0].text;
                 addMsg(reply, 'ai');
@@ -154,19 +195,70 @@
             } catch(e) {
                 if(chat.lastChild.innerText === "વિચારું છું...") chat.lastChild.remove();
                 addMsg("Error: " + e.message, 'error');
-                // Alert the exact error to user
-                alert("API Error: " + e.message);
             }
         }
 
-        // Test Button Logic
+        function speak(text) {
+            if(synth.speaking) synth.cancel();
+            
+            const cleanText = text.replace(/[*#]/g, '');
+            const u = new SpeechSynthesisUtterance(cleanText);
+            u.lang = 'gu-IN';
+            u.rate = 1.1;
+
+            u.onstart = () => { vid.className = 'speaking'; vid.play(); };
+            u.onend = () => { vid.className = ''; vid.pause(); };
+            
+            synth.speak(u);
+        }
+
+        function stopAll() {
+            synth.cancel();
+            recognition.stop();
+            vid.className = '';
+            vid.pause();
+            isListening = false;
+            micBtn.classList.remove('listening');
+        }
+
+        // --- UTILS ---
+
+        function addMsg(text, type) {
+            const d = document.createElement('div');
+            d.className = 'bubble ' + type;
+            d.innerText = text;
+            chat.appendChild(d);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function clearChat() { chat.innerHTML = ''; stopAll(); }
+
+        // --- SETTINGS ---
+        
+        function openSettings() { document.getElementById('settings').style.display = 'flex'; }
+        function closeSettings() { document.getElementById('settings').style.display = 'none'; }
+        
+        function toggleKeyVisibility() {
+            const input = document.getElementById('apiKey');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function saveSettings() {
+            config.key = document.getElementById('apiKey').value.trim();
+            config.model = document.getElementById('model').value;
+            localStorage.setItem('v_key', config.key);
+            localStorage.setItem('v_model', config.model);
+            closeSettings();
+            addMsg("Settings Saved.", 'ai');
+        }
+
         async function testConnection() {
             const k = document.getElementById('apiKey').value;
             const m = document.getElementById('model').value;
-            const resBox = document.getElementById('testResult');
+            const msg = document.getElementById('testMsg');
             
-            resBox.innerText = "Testing...";
-            resBox.style.color = "yellow";
+            msg.innerText = "Testing...";
+            msg.style.color = "yellow";
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${k}`;
@@ -177,48 +269,14 @@
                 });
                 const data = await res.json();
 
-                if(data.error) {
-                    resBox.innerText = "FAIL: " + data.error.message;
-                    resBox.style.color = "red";
-                    alert("ભૂલ: " + data.error.message);
-                } else {
-                    resBox.innerText = "SUCCESS! Connection OK.";
-                    resBox.style.color = "#00ff00";
-                    alert("સફળ! તમારી Key બરાબર છે.");
-                }
+                if(data.error) throw new Error(data.error.message);
+
+                msg.innerText = "✅ Success! Connected.";
+                msg.style.color = "#00ff00";
             } catch(e) {
-                resBox.innerText = "Network Error: " + e.message;
-                resBox.style.color = "red";
+                msg.innerText = "❌ Failed: " + e.message;
+                msg.style.color = "red";
             }
-        }
-
-        function speak(text) {
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text.replace(/[*#]/g, ''));
-            u.lang = 'gu-IN';
-            u.onstart = () => vid.play();
-            u.onend = () => vid.pause();
-            window.speechSynthesis.speak(u);
-        }
-
-        function addMsg(text, type) {
-            const d = document.createElement('div');
-            d.className = 'bubble ' + type;
-            d.innerText = text;
-            chat.appendChild(d);
-            chat.scrollTop = chat.scrollHeight;
-        }
-
-        function openSettings() { document.getElementById('settings').style.display = 'flex'; }
-        function closeSettings() { document.getElementById('settings').style.display = 'none'; }
-        
-        function saveSettings() {
-            config.key = document.getElementById('apiKey').value.trim();
-            config.model = document.getElementById('model').value;
-            localStorage.setItem('v_key', config.key);
-            localStorage.setItem('v_model', config.model);
-            closeSettings();
-            addMsg("Settings saved.", 'ai');
         }
     </script>
 </body>
