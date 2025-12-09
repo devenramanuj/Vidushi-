@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi - Sanatan Dharma AI</title>
+    <title>Vidushi - Voice Only AI</title>
     <style>
         /* CSS Styles */
         body, html {
@@ -23,6 +23,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
         }
 
         /* Video Settings */
@@ -44,56 +45,58 @@
             z-index: 2;
         }
 
-        /* UI Elements */
-        #input-area {
+        /* Mic Button Styling */
+        #mic-container {
             position: absolute;
-            bottom: 20px;
+            bottom: 40px;
             z-index: 10;
-            width: 90%;
-            max-width: 600px;
             display: flex;
+            flex-direction: column;
+            align-items: center;
             gap: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px;
-            border-radius: 30px;
-            backdrop-filter: blur(5px);
         }
 
-        input[type="text"] {
-            flex: 1;
-            padding: 12px 20px;
-            border-radius: 25px;
-            border: none;
-            outline: none;
-            font-size: 16px;
-            background: rgba(255, 255, 255, 0.9);
-        }
-
-        button {
-            padding: 12px 25px;
-            border-radius: 25px;
-            border: none;
-            background-color: #ff9933;
+        #mic-btn {
+            background-color: rgba(255, 69, 0, 0.8); /* ભગવો જેવો કલર */
+            border: 2px solid white;
             color: white;
-            font-weight: bold;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            font-size: 30px;
             cursor: pointer;
-            font-size: 16px;
-            transition: background 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
 
-        button:hover {
-            background-color: #e68a00;
+        #mic-btn:hover {
+            transform: scale(1.1);
+            background-color: rgba(255, 69, 0, 1);
         }
 
-        #loading {
-            display: none;
+        /* સાંભળતી વખતે એનિમેશન */
+        .listening {
+            animation: pulse 1.5s infinite;
+            background-color: red !important;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
+
+        #status-text {
             color: white;
-            position: absolute;
-            bottom: 80px;
-            z-index: 10;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px black;
             font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px black;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 20px;
         }
     </style>
 </head>
@@ -108,38 +111,64 @@
             <source src="talking.mp4" type="video/mp4">
         </video>
 
-        <div id="loading">વિદુષી વિચારી રહી છે...</div>
-
-        <div id="input-area">
-            <input type="text" id="user-input" placeholder="અહીં પ્રશ્ન પૂછો..." onkeypress="handleEnter(event)">
-            <button onclick="sendMessage()">પૂછો</button>
+        <div id="mic-container">
+            <div id="status-text">માઈક દબાવો અને બોલો</div>
+            <button id="mic-btn" onclick="toggleListening()">🎤</button>
         </div>
     </div>
 
     <script>
         // --- Configuration ---
-        const API_KEY = "તમારી_API_KEY_અહીં_મૂકો"; 
+        const API_KEY = "તમારી_API_KEY_અહીં_મૂકો";
         
-        // --- MODEL VERSION UPDATE ---
-        // તમે માંગ્યા મુજબ અહીં 2.5 સેટ કર્યું છે.
-        // જો તમને 'Flash' જોઈતું હોય તો નીચે 'gemini-2.5-pro' કાઢીને 'gemini-2.5-flash' લખી નાખવું.
-        const MODEL_NAME = "gemini-2.5-pro"; 
+        // નોંધ: Google API માં હાલમાં સ્ટેબલ વર્ઝન 'gemini-1.5-pro' છે. 
+        // જો '2.5' ના ચાલે તો અહીં 'gemini-1.5-pro' જ રહેવા દેજો, તે બેસ્ટ રિઝલ્ટ આપશે.
+        const MODEL_NAME = "gemini-1.5-pro"; 
         
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
 
         // Elements
         const silentVideo = document.getElementById('silent-video');
         const talkingVideo = document.getElementById('talking-video');
-        const userInput = document.getElementById('user-input');
-        const loadingText = document.getElementById('loading');
+        const micBtn = document.getElementById('mic-btn');
+        const statusText = document.getElementById('status-text');
+
+        // Speech Recognition Setup (ગુજરાતી સાંભળવા માટે)
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'gu-IN'; // ગુજરાતી ભાષા સેટિંગ
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                micBtn.classList.add('listening');
+                statusText.innerText = "સાંભળું છું...";
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('listening');
+                // Status will be updated by API logic
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                statusText.innerText = "વિચારું છું...";
+                sendMessage(transcript);
+            };
+        } else {
+            alert("તમારા બ્રાઉઝરમાં માઈક સપોર્ટ નથી. કૃપા કરીને Chrome બ્રાઉઝર વાપરો.");
+        }
 
         // Bot Persona
         const systemInstruction = `
-            તારું નામ 'વિદુષી' છે. તું દેવેન્દ્રભાઈ દ્વારા બનાવવામાં આવી છે.
-            વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી.
+            તારું નામ 'વિદુષી' છે.
+            શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી.
             હિન્દુ સનાતન ધર્મ વિશે જ્ઞાન આપવું.
-            જવાબ ગુજરાતી ભાષામાં, ટૂંકો અને મૌલિક હોવો જોઈએ.
-            તમારે ઇમોશનલ અને સમજદાર રીતે વાત કરવાની છે.
+            જવાબ મૌલિક અને ટૂંકો હોવો જોઈએ કારણ કે તે બોલવાનો છે.
+            ખાસ: જવાબમાં કોઈ પણ સ્પેશિયલ કેરેક્ટર કે ઈમોજી ન વાપરવા.
         `;
 
         let chatHistory = [
@@ -160,38 +189,63 @@
             }
         }
 
+        // --- Mic Button Action ---
+        function toggleListening() {
+            // જો અત્યારે બોટ બોલતો હોય, તો તેને ચૂપ કરો
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                setTalkingState(false);
+                statusText.innerText = "માઈક દબાવો અને બોલો";
+                return;
+            }
+
+            // રેકોર્ડિંગ શરૂ કરો
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error("Mic Error:", e);
+                    recognition.stop();
+                }
+            }
+        }
+
         // --- TTS (Text to Speech) ---
         function speakText(text) {
-            // Punctuation Removal logic (ચિન્હો બોલે નહીં તે માટે)
+            // ચિન્હો હટાવવા (જેથી અલ્પવિરામ, પૂર્ણવિરામ ન બોલે)
             const cleanText = text.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, " ");
 
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Stop previous audio
+                window.speechSynthesis.cancel();
 
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = 'gu-IN';
                 utterance.rate = 1.0; 
-                utterance.pitch = 1.0;
 
-                utterance.onstart = () => setTalkingState(true);
-                utterance.onend = () => setTalkingState(false);
-                utterance.onerror = () => setTalkingState(false);
+                utterance.onstart = () => {
+                    statusText.innerText = "બોલી રહી છું...";
+                    setTalkingState(true);
+                };
+
+                utterance.onend = () => {
+                    setTalkingState(false);
+                    statusText.innerText = "માઈક દબાવો અને બોલો";
+                };
+
+                utterance.onerror = () => {
+                    setTalkingState(false);
+                    statusText.innerText = "માઈક દબાવો અને બોલો";
+                };
 
                 window.speechSynthesis.speak(utterance);
-            } else {
-                alert("TTS not supported.");
             }
         }
 
         // --- API Call ---
-        async function sendMessage() {
-            const text = userInput.value.trim();
-            if (!text) return;
+        async function sendMessage(userText) {
+            if (!userText) return;
 
-            userInput.value = '';
-            loadingText.style.display = 'block';
-
-            chatHistory.push({ role: "user", parts: [{ text: text }] });
+            chatHistory.push({ role: "user", parts: [{ text: userText }] });
 
             try {
                 const response = await fetch(API_URL, {
@@ -200,41 +254,24 @@
                     body: JSON.stringify({ contents: chatHistory })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP Error: ${response.status}`);
-                }
-
                 const data = await response.json();
                 
                 if (data.candidates && data.candidates[0].content) {
                     const botResponse = data.candidates[0].content.parts[0].text;
-                    
                     chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
-                    loadingText.style.display = 'none';
-                    
                     speakText(botResponse);
                 } else {
-                    loadingText.innerText = "Error in response.";
-                    setTimeout(() => loadingText.style.display = 'none', 2000);
+                    statusText.innerText = "Error: ફરી પ્રયત્ન કરો";
                 }
 
             } catch (error) {
-                console.error("Error:", error);
-                loadingText.innerText = "Error: API અથવા નેટવર્ક ચેક કરો";
-                // Error આવે તો થોડી વાર પછી મેસેજ હટાવી દેવો
-                setTimeout(() => loadingText.style.display = 'none', 3000);
+                console.error("API Error:", error);
+                statusText.innerText = "Netwrok Error";
             }
-        }
-
-        function handleEnter(event) {
-            if (event.key === "Enter") sendMessage();
         }
 
         // Initialize
         setTalkingState(false);
-    </script>
-</body>
-</html>
     </script>
 </body>
 </html>
