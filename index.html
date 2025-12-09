@@ -3,370 +3,737 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi AI</title>
+    <title>વિદુષી AI Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- CSS Styles --- */
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Arial', sans-serif;
+        :root {
+            --primary-bg: #121212;
+            --secondary-bg: #1e1e1e;
+            --chat-bg: #292929;
+            --text-color: #ffffff;
+            --accent-red: #8b0000;
+            --border-color: #333333;
+            --button-color: #444444;
+            --status-green: #00ff00;
+            --status-red: #ff0000;
+            --status-blue: #00ffff;
         }
-
-        /* --- Video Layer --- */
-        #video-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1; /* વિડીયો સૌથી પાછળ */
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        #talking-video {
-            display: none;
-        }
-
-        /* --- SETTINGS BUTTON (FIXED ON TOP) --- */
-        #settings-btn {
-            position: fixed; /* સ્ક્રીન પર ચોંટેલું રહેશે */
-            top: 20px;
-            right: 20px;
-            z-index: 1000; /* સૌથી ઉપર */
-            background-color: #ff4500; /* લાલ કલર જેથી દેખાય */
-            color: white;
-            border: 2px solid white;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 30px;
-            cursor: pointer;
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            background: var(--primary-bg);
+            min-height: 100vh;
+            color: var(--text-color);
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-
-        #settings-btn:hover {
-            transform: scale(1.1);
-        }
-
-        /* --- Settings Modal --- */
-        #settings-modal {
-            display: none;
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 1001;
-            background: rgba(20, 20, 20, 0.95);
             padding: 20px;
-            border-radius: 10px;
-            width: 280px;
-            border: 1px solid #ff4500;
-            color: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
-
-        .setting-item {
-            margin-bottom: 15px;
-        }
-
-        .setting-item label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #ff9933;
-        }
-
-        .setting-item input, .setting-item select {
-            width: 90%;
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #555;
-            background: #333;
-            color: white;
-            font-size: 14px;
-        }
-
-        #save-btn {
+        
+        .container {
             width: 100%;
-            padding: 10px;
-            background-color: #ff9933;
-            border: none;
-            color: white;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        /* --- Mic Controls --- */
-        #mic-container {
-            position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 500;
+            max-width: 600px;
+            background: var(--secondary-bg);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            position: relative;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 10px;
+            height: 85vh;
         }
+        
+        header {
+            background: var(--secondary-bg);
+            padding: 15px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        h1 { font-size: 2.2rem; font-weight: 500; color: var(--text-color); }
+        .header-line { height: 2px; background-color: var(--accent-red); width: 100%; margin-top: 5px; }
+        
+        .content-area { flex-grow: 1; position: relative; overflow: hidden; display: flex; }
 
-        #mic-btn {
-            background-color: rgba(255, 69, 0, 0.8);
-            border: 2px solid white;
-            color: white;
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            font-size: 30px;
-            cursor: pointer;
+        #chatPage, #settingsPage {
+            padding: 20px;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            background: var(--secondary-bg);
+            transition: opacity 0.3s ease;
         }
 
-        .listening {
-            animation: pulse 1.5s infinite;
-            background-color: red !important;
+        #settingsPage { display: none; z-index: 10; overflow-y: auto; }
+        
+        .chat-container { flex-grow: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        .chat-messages { flex-grow: 1; padding: 0 0 15px 0; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+
+        .message { display: flex; gap: 10px; padding: 0 5px; }
+        .message.user { justify-content: flex-end; }
+        .message.ai { justify-content: flex-start; }
+        
+        .avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0; background: var(--button-color); color: var(--text-color);
+        }
+        
+        .message-content {
+            max-width: 85%; padding: 10px 15px; border-radius: 15px;
+            line-height: 1.4; word-wrap: break-word; background: var(--chat-bg); border: 1px solid #333;
+        }
+        .user .message-content { background: #444; }
+        
+        #typingIndicator .message-content { background: #222; width: 50px; text-align: center; padding: 8px 15px; }
+        .typing-indicator-dot {
+            width: 6px; height: 6px; background: #aaa; border-radius: 50%;
+            display: inline-block; margin: 0 2px; animation: typing 1.4s infinite;
+        }
+        @keyframes typing { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
+
+        .voice-controls {
+            padding: 10px 0 0 0; border-top: 1px solid var(--border-color);
+            display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0;
+        }
+        
+        .voice-btn {
+            width: 70px; height: 70px; border-radius: 50%; background: var(--button-color);
+            border: none; color: var(--text-color); font-size: 24px; cursor: pointer;
+            transition: all 0.3s; display: flex; align-items: center; justify-content: center;
+            position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .voice-btn:hover { background: #555; transform: scale(1.05); }
+        .voice-btn.listening {
+            background: var(--status-red); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.5); animation: pulse-ring 1.5s infinite;
+        }
+        .voice-btn.continuous-active::after {
+            content: '\f021'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            position: absolute; top: 0; right: 0; background: var(--status-blue);
+            color: black; font-size: 10px; width: 20px; height: 20px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--secondary-bg);
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); }
+        #stopBtn {
+            width: 50px; height: 50px; border-radius: 50%; background: #ff0000; border: 2px solid #8b0000;
+            color: white; font-size: 20px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; margin-top: 10px; transition: all 0.3s; box-shadow: 0 4px 10px rgba(255, 0, 0, 0.2);
+        }
+        #stopBtn:hover { background: #cc0000; transform: scale(1.1); }
+        
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.5); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 0, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
 
-        #status-text {
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 5px 15px;
-            border-radius: 20px;
+        .voice-status { font-size: 14px; color: #aaa; min-height: 20px; text-align: center; }
+
+        .status-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 15px;
         }
+        .status-indicator { display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-red); }
+        .screen-lock-status { font-size: 10px; color: #666; margin-left: 5px; display: none; }
+        .screen-lock-status.active { display: inline; color: var(--status-green); }
+
+        .action-buttons button {
+            background: #333; color: white; border: none; padding: 8px 12px;
+            border-radius: 8px; cursor: pointer; transition: background 0.3s;
+        }
+        .action-buttons button:hover { background: #555; }
+        
+        #toggleSettingsBtn {
+            position: absolute; top: 20px; right: 20px; z-index: 20; background: var(--button-color);
+            border: none; color: var(--text-color); width: 40px; height: 40px; border-radius: 50%;
+            cursor: pointer; font-size: 18px; transition: background 0.3s;
+        }
+        #toggleSettingsBtn:hover { background: #555; }
+
+        .settings-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);
+        }
+        .settings-header h2 { font-size: 1.8rem; color: var(--text-color); }
+        #backToChatBtn { background: var(--button-color); color: var(--text-color); border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+
+        .setting-group { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px dashed #333; }
+        .setting-group label { display: block; margin-bottom: 8px; font-size: 14px; color: #ccc; }
+        .api-input-group, .setting-group input, .setting-group select, .setting-group button {
+            width: 100%; padding: 10px 12px; background: var(--chat-bg);
+            border: 1px solid #444; border-radius: 6px; color: white; font-size: 14px;
+        }
+
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--status-green); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        .footer { text-align: center; padding: 10px; font-size: 12px; color: #666; border-top: 1px solid var(--border-color); background: var(--secondary-bg); flex-shrink: 0; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <button id="toggleSettingsBtn" title="સેટિંગ્સ"><i class="fas fa-cog"></i></button>
 
-    <div id="video-container">
-        <video id="silent-video" autoplay muted loop playsinline>
-            <source src="silent.mp4" type="video/mp4">
-        </video>
-        <video id="talking-video" muted loop playsinline>
-            <source src="talking.mp4" type="video/mp4">
-        </video>
-    </div>
-
-    <div id="settings-btn" onclick="toggleSettings()">⚙️</div>
-
-    <div id="settings-modal">
-        <h3 style="margin-top:0; color: #ff9933; text-align: center;">Settings</h3>
+        <header>
+            <h1>વિદુષી</h1>
+            <div class="header-line"></div>
+        </header>
         
-        <div class="setting-item">
-            <label>API Key:</label>
-            <input type="text" id="api-key-input" placeholder="Enter API Key">
+        <div class="content-area">
+            <div id="chatPage">
+                <div class="chat-container">
+                    <div class="status-bar">
+                        <div class="status-indicator">
+                            <div class="status-dot" id="statusDot"></div>
+                            <span id="connectionStatus">Key જરૂરી છે</span>
+                            <i class="fas fa-sun screen-lock-status" id="screenLockIcon" title="Screen Awake Active"></i>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="clearBtn" title="Chat Clear કરો"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message ai">
+                            <div class="avatar"><i class="fas fa-robot"></i></div>
+                            <div class="message-content">જય શ્રી કૃષ્ણ 🙏! હું વિદુષી છું. આપ કેવી રીતે મદદ કરી શકું?</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="voice-controls">
+                    <div class="voice-status" id="voiceStatus">સેટિંગ્સમાં Key સેવ કરો</div>
+                    <button class="voice-btn" id="voiceBtn" title="બોલવા માટે ક્લિક કરો">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button id="stopBtn" title="વાતચીત બંધ કરો (Mute)">
+                        <i class="fas fa-volume-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="settingsPage">
+                <div class="settings-header">
+                    <h2>સેટિંગ્સ</h2>
+                    <button id="backToChatBtn"><i class="fas fa-arrow-left"></i> પાછા જાઓ</button>
+                </div>
+
+                <div class="setting-group">
+                    <label for="apiKey"><i class="fas fa-key"></i> Gemini API Key</label>
+                    <div class="api-input-group" style="display: flex; gap: 5px;">
+                        <input type="password" id="apiKey" placeholder="તમારી Gemini API key દાખલ કરો">
+                        <button type="button" id="toggleApiKey" style="width: 40px; flex-shrink: 0; padding: 0;"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <button id="saveApiKey" style="margin-top: 10px;"><i class="fas fa-save"></i> Key સેવ કરો</button>
+                    <button id="testApiBtn" style="margin-top: 10px; background: #333;"><i class="fas fa-bolt"></i> API Test</button>
+                </div>
+
+                <div class="setting-group" style="border: 1px solid #555; padding: 15px; border-radius: 8px; background: #252525;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <label for="continuousMode" style="margin: 0; color: #fff; font-weight: bold;">
+                            <i class="fas fa-comments"></i> સતત વાતચીત (Continuous)
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="continuousMode">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #444; padding-top: 10px;">
+                        <label for="screenWakeLock" style="margin: 0; color: #ddd; font-size: 14px;">
+                            <i class="fas fa-sun"></i> સ્ક્રીન ચાલુ રાખો (Wake Lock)
+                        </label>
+                        <label class="toggle-switch" style="width: 40px; height: 20px;">
+                            <input type="checkbox" id="screenWakeLock" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p style="font-size: 11px; color: #aaa; margin-top: 5px;">નોંધ: સ્ક્રીન બંધ થવાથી વાતચીત અટકી જાય છે, તેથી આ ચાલુ રાખવું હિતાવહ છે.</p>
+                </div>
+                
+                <div class="setting-group">
+                    <label><i class="fas fa-brain"></i> AI Model (પસંદ કરો)</label>
+                    <select id="modelSelect">
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (તમારી પસંદ)</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (તમારી પસંદ)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                    </select>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="language"><i class="fas fa-language"></i> ભાષા (Language)</label>
+                    <select id="language">
+                        <option value="gu-IN">Gujarati</option>
+                        <option value="en-US">English (US)</option>
+                        <option value="hi-IN">Hindi</option>
+                    </select>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="voice"><i class="fas fa-microphone-alt"></i> અવાજનો પ્રકાર</label>
+                    <select id="voice">
+                        <option value="female">સ્ત્રી અવાજ</option>
+                        <option value="male">પુરુષ અવાજ</option>
+                    </select>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="speechRate"><i class="fas fa-tachometer-alt"></i> બોલવાની ગતિ (Speed) <span id="rateValue">1.0x</span></label>
+                    <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1">
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="autoSpeak" checked>
+                    <label for="autoSpeak">જવાબ આપોઆપ બોલો</label>
+                </div>
+            </div>
         </div>
 
-        <div class="setting-item">
-            <label>Model Version:</label>
-            <select id="model-select">
-                <option value="gemini-1.5-flash">2.5 Flash</option>
-                <option value="gemini-1.5-pro" selected>2.5 Pro</option>
-            </select>
-        </div>
-
-        <button id="save-btn" onclick="saveSettings()">Save & Close</button>
-    </div>
-
-    <div id="mic-container">
-        <div id="status-text">માઈક દબાવો</div>
-        <button id="mic-btn" onclick="toggleListening()">🎤</button>
+        <footer class="footer">Developed by - Devendra Ramanuj | 9276595936</footer>
     </div>
 
     <script>
-        // --- Logic ---
-        
-        // 1. Load Settings
-        let apiKey = localStorage.getItem("vidushi_api_key") || "તમારી_API_KEY_અહીં_મૂકો";
-        let currentModel = localStorage.getItem("vidushi_model") || "gemini-1.5-pro";
-
-        // Elements
-        const silentVideo = document.getElementById('silent-video');
-        const talkingVideo = document.getElementById('talking-video');
-        const micBtn = document.getElementById('mic-btn');
-        const statusText = document.getElementById('status-text');
-        const settingsModal = document.getElementById('settings-modal');
-        const apiKeyInput = document.getElementById('api-key-input');
-        const modelSelect = document.getElementById('model-select');
-
-        // Set inputs to current values
-        apiKeyInput.value = apiKey === "તમારી_API_KEY_અહીં_મૂકો" ? "" : apiKey;
-        modelSelect.value = currentModel;
-
-        // --- Settings Functions ---
-        function toggleSettings() {
-            if (settingsModal.style.display === "block") {
-                settingsModal.style.display = "none";
-            } else {
-                settingsModal.style.display = "block";
-            }
-        }
-
-        function saveSettings() {
-            const newKey = apiKeyInput.value.trim();
-            const newModel = modelSelect.value;
-
-            if (newKey) {
-                apiKey = newKey;
-                currentModel = newModel;
+        class GeminiAIAssistant {
+            constructor() {
+                this.elements = Object.fromEntries(Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el]));
+                this.apiKey = localStorage.getItem('geminiApiKey');
                 
-                // Save to browser memory
-                localStorage.setItem("vidushi_api_key", apiKey);
-                localStorage.setItem("vidushi_model", currentModel);
-
-                settingsModal.style.display = "none";
-                alert("સેટિંગ સેવ થઈ ગયું!");
-            } else {
-                alert("API Key નાખવી જરૂરી છે.");
+                // Set default to 2.5-flash as requested by user
+                this.currentModel = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+                
+                this.isProcessing = false;
+                this.isListening = false;
+                this.recognition = null;
+                this.speechSynthesis = window.speechSynthesis;
+                this.currentUtterance = null;
+                this.voices = [];
+                this.shouldContinueListening = false;
+                this.wakeLock = null;
+                this.initialize();
             }
-        }
 
-        // --- Video Control ---
-        function setTalkingState(isTalking) {
-            if (isTalking) {
-                silentVideo.style.display = 'none';
-                talkingVideo.style.display = 'block';
-                talkingVideo.play().catch(e => console.log(e));
-            } else {
-                silentVideo.style.display = 'block';
-                talkingVideo.style.display = 'none';
-                talkingVideo.pause();
-                talkingVideo.currentTime = 0;
-            }
-        }
-
-        // --- Speech Recognition ---
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition;
-        
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'gu-IN';
-            recognition.continuous = false;
-
-            recognition.onstart = () => {
-                micBtn.classList.add('listening');
-                statusText.innerText = "સાંભળું છું...";
-            };
-
-            recognition.onend = () => {
-                micBtn.classList.remove('listening');
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                statusText.innerText = "વિચારું છું...";
-                sendMessage(transcript);
-            };
-        }
-
-        function toggleListening() {
-            // Stop talking if active
-            if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-                setTalkingState(false);
-                statusText.innerText = "માઈક દબાવો";
-                return;
+            initialize() {
+                this.loadSettings();
+                this.setupEventListeners();
+                this.initializeSpeech();
+                const loadVoices = () => { this.voices = this.speechSynthesis.getVoices(); };
+                if (this.speechSynthesis.onvoiceschanged !== undefined) { this.speechSynthesis.onvoiceschanged = loadVoices; }
+                setTimeout(loadVoices, 500);
+                this.updateConnectionStatus(this.apiKey ? 'Ready' : 'Not Ready');
+                this.updateContinuousModeUI();
+                document.addEventListener('visibilitychange', async () => {
+                    if (this.wakeLock !== null && document.visibilityState === 'visible') { await this.activateWakeLock(); }
+                });
             }
             
-            // Start listening
-            if (recognition) {
-                recognition.start();
-            } else {
-                alert("Browser does not support speech recognition.");
-            }
-        }
-
-        // --- TTS (Speak) ---
-        function speakText(text) {
-            const cleanText = text.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, " ");
-            
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(cleanText);
-                utterance.lang = 'gu-IN';
-                
-                utterance.onstart = () => {
-                    statusText.innerText = "બોલી રહી છું...";
-                    setTalkingState(true);
-                };
-                utterance.onend = () => {
-                    setTalkingState(false);
-                    statusText.innerText = "માઈક દબાવો";
-                };
-                utterance.onerror = () => setTalkingState(false);
-                
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        // --- Gemini API Call ---
-        async function sendMessage(userText) {
-            if(!apiKey || apiKey === "તમારી_API_KEY_અહીં_મૂકો") {
-                alert("કૃપા કરીને પહેલા સેટિંગ (⚙️) માં જઈને API Key નાખો.");
-                statusText.innerText = "API Key ખૂટે છે";
-                return;
+            async activateWakeLock() {
+                if (!this.elements.screenWakeLock.checked) return;
+                try {
+                    if ('wakeLock' in navigator) {
+                        this.wakeLock = await navigator.wakeLock.request('screen');
+                        this.elements.screenLockIcon.classList.add('active');
+                    }
+                } catch (err) { console.error('Wake Lock failed:', err); }
             }
 
-            const history = [
-                {
-                    role: "user",
-                    parts: [{ text: "તારું નામ વિદુષી છે. જય શ્રી કૃષ્ણ થી વાત શરૂ કરવી. સનાતન ધર્મ વિશે ટૂંકમાં ગુજરાતીમાં વાત કરવી. જવાબમાં કોઈ ચિન્હો ન વાપરવા." }]
-                },
-                {
-                    role: "user",
-                    parts: [{ text: userText }]
+            async deactivateWakeLock() {
+                if (this.wakeLock !== null) {
+                    try {
+                        await this.wakeLock.release();
+                        this.wakeLock = null;
+                        this.elements.screenLockIcon.classList.remove('active');
+                    } catch (err) { console.error('Wake Lock release failed:', err); }
                 }
-            ];
+            }
+            
+            loadSettings() {
+                this.elements.language.value = localStorage.getItem('geminiLanguage') || 'gu-IN';
+                this.elements.speechRate.value = localStorage.getItem('geminiSpeechRate') || '1.0';
+                this.elements.rateValue.textContent = `${this.elements.speechRate.value}x`;
+                this.elements.voice.value = localStorage.getItem('geminiVoiceType') || 'female';
+                this.elements.autoSpeak.checked = localStorage.getItem('geminiAutoSpeak') === 'false' ? false : true;
+                this.elements.continuousMode.checked = localStorage.getItem('geminiContinuousMode') === 'true';
+                const wakeLockSetting = localStorage.getItem('geminiScreenWakeLock');
+                this.elements.screenWakeLock.checked = wakeLockSetting === null ? true : (wakeLockSetting === 'true');
+                
+                // Ensure the dropdown has the correct selected value
+                this.elements.modelSelect.value = this.currentModel;
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
+                if (this.apiKey) { this.elements.apiKey.value = '•'.repeat(32); }
+            }
 
-            try {
+            saveSettings() {
+                localStorage.setItem('geminiApiKey', this.apiKey);
+                localStorage.setItem('geminiModel', this.currentModel);
+                localStorage.setItem('geminiLanguage', this.elements.language.value);
+                localStorage.setItem('geminiSpeechRate', this.elements.speechRate.value);
+                localStorage.setItem('geminiVoiceType', this.elements.voice.value);
+                localStorage.setItem('geminiAutoSpeak', this.elements.autoSpeak.checked);
+                localStorage.setItem('geminiContinuousMode', this.elements.continuousMode.checked);
+                localStorage.setItem('geminiScreenWakeLock', this.elements.screenWakeLock.checked);
+                this.updateContinuousModeUI();
+            }
+            
+            updateContinuousModeUI() {
+                if (this.elements.continuousMode.checked) { this.elements.voiceBtn.classList.add('continuous-active'); } 
+                else { this.elements.voiceBtn.classList.remove('continuous-active'); }
+            }
+
+            togglePage(pageId) {
+                const chatPage = this.elements.chatPage;
+                const settingsPage = this.elements.settingsPage;
+                if (pageId === 'settings') { chatPage.style.display = 'none'; settingsPage.style.display = 'flex'; } 
+                else { settingsPage.style.display = 'none'; chatPage.style.display = 'flex'; }
+            }
+
+            updateConnectionStatus(status, message = null) {
+                const statusMap = {
+                    'Ready': { text: '✅ વાતચીત માટે તૈયાર', color: 'var(--status-green)' },
+                    'Not Ready': { text: 'Key જરૂરી છે', color: 'var(--status-red)' },
+                    'Testing': { text: 'API Testing...', color: '#ffd700' },
+                    'Connected': { text: '✅ API Connected', color: 'var(--status-green)' },
+                    'Failed': { text: '❌ API ભૂલ', color: 'var(--status-red)' },
+                    'Listening': { text: '🎤 સાંભળી રહી છે...', color: 'var(--status-blue)' },
+                    'Speaking': { text: '🔊 બોલી રહી છે...', color: 'var(--status-green)' },
+                    'Processing': { text: '🧠 વિચાર કરી રહી છે...', color: '#ffd700' },
+                };
+                const currentStatus = statusMap[status] || statusMap['Not Ready'];
+                this.elements.connectionStatus.textContent = message || currentStatus.text;
+                this.elements.statusDot.style.background = currentStatus.color;
+                this.elements.voiceStatus.textContent = message || currentStatus.text;
+                this.elements.voiceBtn.disabled = (status === 'Not Ready');
+            }
+
+            showNotification(message, type = 'info') { console.log(`[${type}]: ${message}`); }
+
+            initializeSpeech() {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    this.recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
+                    this.recognition.continuous = false;
+                    this.recognition.interimResults = false;
+                    this.recognition.maxAlternatives = 1;
+                    this.recognition.lang = this.elements.language.value;
+                    this.recognition.onstart = () => this.startListeningUI();
+                    this.recognition.onresult = (event) => this.handleRecognitionResult(event);
+                    this.recognition.onerror = (event) => this.handleRecognitionError(event);
+                    this.recognition.onend = () => { this.stopListeningUI(); };
+                }
+            }
+
+            async processWithGemini(userMessage) {
+                if (!this.apiKey) return;
+                if (this.isProcessing) return;
+                this.isProcessing = true;
+                this.updateConnectionStatus('Processing');
+                this.showTypingIndicator();
+                try {
+                    const responseText = await this.callGeminiAPI(userMessage);
+                    this.removeTypingIndicator();
+                    if (responseText) {
+                        this.addMessage(responseText, 'ai');
+                        if (this.elements.autoSpeak.checked) { this.speakText(responseText); } 
+                        else {
+                            this.isProcessing = false;
+                            if (this.elements.continuousMode.checked && this.shouldContinueListening) {
+                                setTimeout(() => this.toggleListening(true), 1000);
+                            } else { this.updateConnectionStatus('Ready'); }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Gemini Processing Error:', error);
+                    this.removeTypingIndicator();
+                    const errorMsg = error.message || 'Unknown Error';
+                    this.addMessage(`Error: API માં ભૂલ આવી. (${errorMsg})`, 'ai');
+                    this.updateConnectionStatus('Failed');
+                    this.isProcessing = false;
+                    this.shouldContinueListening = false;
+                }
+            }
+
+            async callGeminiAPI(userMessage) {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
+                
+                const systemInstruction = {
+                    parts: [{
+                        text: `તારું નામ વિદુષી (Vidushi) છે. તારું સર્જન 'દેવેન્દ્ર રામાનુજ' (Devendra Ramanuj) એ કર્યું છે. 
+                               તારે હંમેશા ખૂબ જ આત્મીયતાથી અને લાગણીસભર વાત કરવાની છે.
+                               નિયમો:
+                               1. જ્યારે પણ પહેલીવાર વાત થાય ત્યારે 'જય શ્રી કૃષ્ણ 🙏' થી શરૂઆત કરવી.
+                               2. સામાન્ય પ્રશ્નોના સરળ અને ટૂંકમાં જવાબ આપવા.
+                               3. જો પ્રશ્ન ગહન, આધ્યાત્મિક કે જટિલ હોય, તો પહેલા ટૂંકમાં કહીને પૂછવું કે "શું આપ આના વિશે વધુ વિસ્તૃત માહિતી ઈચ્છો છો?"
+                               4. જવાબમાં બિનજરૂરી ચિન્હો (જેમ કે *, #) ન વાપરવા. સાદું લખાણ લખવું.
+                               `
+                    }]
+                };
+
+                const contents = [{ role: 'user', parts: [{ text: userMessage }] }];
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: history })
+                    body: JSON.stringify({ 
+                        systemInstruction: systemInstruction,
+                        contents: contents, 
+                        generationConfig: { temperature: 0.7 } 
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || data.error) {
+                    throw new Error(data.error?.message || 'API request failed');
+                }
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+            }
+
+            speakText(text) {
+                if (!this.speechSynthesis) return;
+                if (this.currentUtterance) this.speechSynthesis.cancel();
+                this.activateWakeLock();
+                this.updateConnectionStatus('Speaking');
+                
+                let cleanText = text.replace(/[*#_`~>\[\]()]/g, ""); 
+                cleanText = cleanText.replace(/https?:\/\/\S+/g, " લિંક ");
+                cleanText = cleanText.replace(/\s+/g, " ").trim();
+
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = this.elements.language.value;
+                utterance.rate = parseFloat(this.elements.speechRate.value);
+                
+                if (this.voices.length > 0) {
+                    const voiceType = this.elements.voice.value;
+                    const langCode = utterance.lang.split('-')[0];
+                    let selectedVoice = this.voices.find(v => v.lang.startsWith(langCode) && v.name.toLowerCase().includes(voiceType)) || 
+                                        this.voices.find(v => v.lang.startsWith(langCode)) || this.voices[0];
+                    utterance.voice = selectedVoice;
+                }
+                
+                utterance.onend = () => {
+                    this.currentUtterance = null;
+                    this.isProcessing = false;
+                    if (this.elements.continuousMode.checked && this.shouldContinueListening) {
+                        this.updateConnectionStatus('Ready', 'ફરી સાંભળું છું...');
+                        setTimeout(() => { if (this.shouldContinueListening) { this.toggleListening(true); } }, 500);
+                    } else {
+                        this.updateConnectionStatus('Ready');
+                        this.shouldContinueListening = false;
+                        this.deactivateWakeLock();
+                    }
+                };
+                utterance.onerror = (e) => {
+                    console.error('Speech Error:', e);
+                    this.isProcessing = false;
+                    this.deactivateWakeLock();
+                };
+                this.currentUtterance = utterance;
+                this.speechSynthesis.speak(utterance);
+            }
+            
+            setupEventListeners() {
+                this.elements.voiceBtn.addEventListener('click', () => {
+                    if (this.isListening) { this.stopAllProcesses(); } 
+                    else { this.shouldContinueListening = true; this.toggleListening(true); }
+                });
+                this.elements.stopBtn.addEventListener('click', () => this.stopAllProcesses());
+                this.elements.clearBtn.addEventListener('click', () => this.clearChat());
+                this.elements.toggleSettingsBtn.addEventListener('click', () => this.togglePage('settings'));
+                this.elements.backToChatBtn.addEventListener('click', () => this.togglePage('chat'));
+                this.elements.saveApiKey.addEventListener('click', () => this.handleApiKeySave());
+                
+                this.elements.testApiBtn.addEventListener('click', async () => {
+                    const btn = this.elements.testApiBtn;
+                    const originalText = '<i class="fas fa-bolt"></i> API Test';
+                    
+                    let keyToTest = this.apiKey;
+                    const inputKey = this.elements.apiKey.value.trim();
+                    if (!keyToTest && inputKey.startsWith('AIza')) { keyToTest = inputKey; }
+
+                    if (!keyToTest) {
+                        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Key નાખો';
+                        setTimeout(() => btn.innerHTML = originalText, 2000);
+                        return;
+                    }
+
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+                    btn.disabled = true;
+
+                    try {
+                        const model = this.currentModel;
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToTest}`;
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] })
+                        });
+
+                        if (response.ok) {
+                            btn.innerHTML = '<i class="fas fa-check"></i> સફળ (Success)';
+                            btn.style.background = 'var(--status-green)';
+                            btn.style.color = 'black';
+                            this.updateConnectionStatus('Connected');
+                        } else {
+                            throw new Error('Failed');
+                        }
+                    } catch (error) {
+                        btn.innerHTML = '<i class="fas fa-times"></i> નિષ્ફળ (Failed)';
+                        btn.style.background = 'var(--status-red)';
+                    }
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = '#333';
+                        btn.style.color = 'white';
+                        btn.disabled = false;
+                    }, 3000);
                 });
 
-                if (!response.ok) throw new Error("API Error");
+                this.elements.speechRate.addEventListener('input', () => {
+                    this.elements.rateValue.textContent = `${this.elements.speechRate.value}x`;
+                    this.saveSettings();
+                });
+                ['language', 'voice', 'autoSpeak', 'continuousMode', 'screenWakeLock'].forEach(id => {
+                    this.elements[id].addEventListener('change', () => this.saveSettings());
+                });
 
-                const data = await response.json();
-                if (data.candidates && data.candidates[0].content) {
-                    const botResponse = data.candidates[0].content.parts[0].text;
-                    speakText(botResponse);
-                } else {
-                    statusText.innerText = "કોઈ જવાબ ન મળ્યો.";
+                // Listen for Model Select changes
+                this.elements.modelSelect.addEventListener('change', (e) => {
+                    this.currentModel = e.target.value;
+                    this.saveSettings();
+                });
+
+                document.getElementById('toggleApiKey').addEventListener('click', () => {
+                    const input = this.elements.apiKey;
+                    input.type = input.type === 'password' ? 'text' : 'password';
+                });
+            }
+
+            handleRecognitionResult(event) {
+                const transcript = event.results[0][0].transcript;
+                this.addMessage(transcript, 'user');
+                this.processWithGemini(transcript);
+            }
+            
+            handleRecognitionError(event) {
+                console.error('Recognition error:', event.error);
+                this.stopListeningUI();
+                if(event.error === 'no-speech' && this.elements.continuousMode.checked && this.shouldContinueListening) {
+                     this.shouldContinueListening = false;
+                     this.updateConnectionStatus('Ready', 'કોઈ અવાજ નહીં - મોડ બંધ');
+                     this.deactivateWakeLock();
                 }
-            } catch (error) {
-                console.error(error);
-                statusText.innerText = "Error: API Key ચેક કરો";
+            }
+
+            handleApiKeySave() {
+                const apiKey = this.elements.apiKey.value.trim();
+                if (!apiKey || !apiKey.startsWith('AIza')) {
+                    this.showNotification('API Key અયોગ્ય છે.', 'error'); return;
+                }
+                this.apiKey = apiKey;
+                this.elements.apiKey.type = 'password';
+                this.elements.apiKey.value = '•'.repeat(32);
+                this.saveSettings();
+                const saveBtn = this.elements.saveApiKey;
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> સેવ થઈ ગઈ';
+                setTimeout(() => saveBtn.innerHTML = originalText, 2000);
+            }
+
+            stopAllProcesses() {
+                this.shouldContinueListening = false;
+                if (this.speechSynthesis.speaking) this.speechSynthesis.cancel();
+                if (this.recognition) this.recognition.stop();
+                this.removeTypingIndicator();
+                this.stopListeningUI();
+                this.isProcessing = false;
+                this.deactivateWakeLock();
+                this.updateConnectionStatus('Ready', 'વાતચીત બંધ કરી');
+            }
+
+            addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'avatar';
+                avatarDiv.innerHTML = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = text;
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(contentDiv);
+                this.elements.chatMessages.appendChild(messageDiv);
+                this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+            }
+
+            showTypingIndicator() {
+                this.removeTypingIndicator();
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'message ai';
+                typingDiv.id = 'typingIndicator';
+                typingDiv.innerHTML = `<div class="avatar"><i class="fas fa-robot"></i></div><div class="message-content"><span class="typing-indicator-dot"></span><span class="typing-indicator-dot"></span><span class="typing-indicator-dot"></span></div>`;
+                this.elements.chatMessages.appendChild(typingDiv);
+                this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+            }
+
+            removeTypingIndicator() {
+                const indicator = document.getElementById('typingIndicator');
+                if (indicator) indicator.remove();
+            }
+            
+            startListeningUI() {
+                this.isListening = true;
+                this.elements.voiceBtn.classList.add('listening');
+                this.updateConnectionStatus('Listening');
+                this.activateWakeLock();
+            }
+
+            stopListeningUI() {
+                this.isListening = false;
+                this.elements.voiceBtn.classList.remove('listening');
+            }
+
+            toggleListening(forceStart = false) {
+                if (!this.apiKey) { this.showNotification('API Key જરૂરી છે', 'error'); return; }
+                if (!this.recognition) return;
+                if (forceStart) {
+                    this.recognition.lang = this.elements.language.value;
+                    try { this.recognition.start(); } catch (e) { console.log('Already started'); }
+                    return;
+                }
+                if (this.isListening) {
+                    this.recognition.stop();
+                    this.shouldContinueListening = false;
+                } else {
+                    this.recognition.lang = this.elements.language.value;
+                    try { this.recognition.start(); } catch (e) { console.error(e); }
+                }
+            }
+
+            clearChat() {
+                this.elements.chatMessages.innerHTML = `<div class="message ai"><div class="avatar"><i class="fas fa-robot"></i></div><div class="message-content">જય શ્રી કૃષ્ણ 🙏! હું વિદુષી છું. આપ કેવી રીતે મદદ કરી શકું?</div></div>`;
+                this.stopAllProcesses();
             }
         }
         
-        // Init
-        setTalkingState(false);
+        document.addEventListener('DOMContentLoaded', () => {
+            window.aiAssistant = new GeminiAIAssistant();
+        });
     </script>
 </body>
 </html>
