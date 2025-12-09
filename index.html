@@ -321,17 +321,13 @@
                 this.elements = Object.fromEntries(Array.from(document.querySelectorAll('[id]')).map(el => [el.id, el]));
                 this.apiKey = localStorage.getItem('geminiApiKey');
                 
-                // --- CRITICAL FIX: FORCE RESET MODEL TO VALID ONE ---
                 let savedModel = localStorage.getItem('geminiModel');
                 const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro'];
-                
                 if (!savedModel || !validModels.includes(savedModel)) {
-                    console.log('Resetting invalid model to gemini-1.5-flash');
                     savedModel = 'gemini-1.5-flash';
                     localStorage.setItem('geminiModel', savedModel);
                 }
                 this.currentModel = savedModel;
-                // ----------------------------------------------------
 
                 this.isProcessing = false;
                 this.isListening = false;
@@ -389,12 +385,9 @@
                 this.elements.screenWakeLock.checked = wakeLockSetting === null ? true : (wakeLockSetting === 'true');
                 if (this.apiKey) { this.elements.apiKey.value = '•'.repeat(32); }
                 
-                // Update Model Buttons UI
                 document.querySelectorAll('.model-btn').forEach(btn => {
                     btn.classList.remove('active');
-                    if(btn.dataset.model === this.currentModel) {
-                        btn.classList.add('active');
-                    }
+                    if(btn.dataset.model === this.currentModel) { btn.classList.add('active'); }
                 });
             }
 
@@ -478,7 +471,6 @@
                 } catch (error) {
                     console.error('Gemini Processing Error:', error);
                     this.removeTypingIndicator();
-                    // Detailed Error Message for debugging
                     const errorMsg = error.message || 'Unknown Error';
                     this.addMessage(`Error: API માં ભૂલ આવી. (${errorMsg})`, 'ai');
                     this.updateConnectionStatus('Failed');
@@ -488,7 +480,6 @@
             }
 
             async callGeminiAPI(userMessage) {
-                // Endpoint uses v1beta which supports gemini-1.5-flash
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.currentModel}:generateContent?key=${this.apiKey}`;
                 
                 const systemInstruction = {
@@ -574,7 +565,59 @@
                 this.elements.toggleSettingsBtn.addEventListener('click', () => this.togglePage('settings'));
                 this.elements.backToChatBtn.addEventListener('click', () => this.togglePage('chat'));
                 this.elements.saveApiKey.addEventListener('click', () => this.handleApiKeySave());
-                this.elements.testApiBtn.addEventListener('click', () => this.testApiConnection());
+                
+                // --- FIXED TEST BUTTON LOGIC ---
+                this.elements.testApiBtn.addEventListener('click', async () => {
+                    const btn = this.elements.testApiBtn;
+                    const originalText = '<i class="fas fa-bolt"></i> API Test';
+                    
+                    // Use entered key directly if not saved yet
+                    let keyToTest = this.apiKey;
+                    const inputKey = this.elements.apiKey.value.trim();
+                    
+                    if (!keyToTest && inputKey.startsWith('AIza')) {
+                        keyToTest = inputKey;
+                    }
+
+                    if (!keyToTest) {
+                        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Key નાખો';
+                        setTimeout(() => btn.innerHTML = originalText, 2000);
+                        return;
+                    }
+
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+                    btn.disabled = true;
+
+                    try {
+                        const model = this.currentModel || 'gemini-1.5-flash';
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToTest}`;
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] })
+                        });
+
+                        if (response.ok) {
+                            btn.innerHTML = '<i class="fas fa-check"></i> સફળ (Success)';
+                            btn.style.background = 'var(--status-green)';
+                            btn.style.color = 'black';
+                            this.updateConnectionStatus('Connected');
+                        } else {
+                            throw new Error('Failed');
+                        }
+                    } catch (error) {
+                        btn.innerHTML = '<i class="fas fa-times"></i> નિષ્ફળ (Failed)';
+                        btn.style.background = 'var(--status-red)';
+                    }
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = '#333';
+                        btn.style.color = 'white';
+                        btn.disabled = false;
+                    }, 3000);
+                });
+
                 this.elements.speechRate.addEventListener('input', () => {
                     this.elements.rateValue.textContent = `${this.elements.speechRate.value}x`;
                     this.saveSettings();
@@ -586,7 +629,7 @@
                     btn.addEventListener('click', (e) => {
                         this.currentModel = e.currentTarget.dataset.model;
                         this.saveSettings();
-                        this.loadSettings(); // Update UI
+                        this.loadSettings();
                     });
                 });
                 document.getElementById('toggleApiKey').addEventListener('click', () => {
@@ -620,7 +663,10 @@
                 this.elements.apiKey.type = 'password';
                 this.elements.apiKey.value = '•'.repeat(32);
                 this.saveSettings();
-                this.showNotification('API key સેવ થઈ ગઈ', 'success');
+                const saveBtn = this.elements.saveApiKey;
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> સેવ થઈ ગઈ';
+                setTimeout(() => saveBtn.innerHTML = originalText, 2000);
             }
 
             stopAllProcesses() {
@@ -690,19 +736,6 @@
                 } else {
                     this.recognition.lang = this.elements.language.value;
                     try { this.recognition.start(); } catch (e) { console.error(e); }
-                }
-            }
-            
-            async testApiConnection() {
-                if (!this.apiKey) return;
-                this.updateConnectionStatus('Testing');
-                try {
-                    await this.callGeminiAPI("Hello");
-                    this.updateConnectionStatus('Connected');
-                    this.showNotification('API Connected', 'success');
-                } catch (error) {
-                    console.error(error);
-                    this.updateConnectionStatus('Failed');
                 }
             }
 
