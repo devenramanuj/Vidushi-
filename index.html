@@ -96,7 +96,6 @@
             border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 15px; border-radius: 5px;
         }
 
-        /* Toggle Switch */
         .toggle-container {
             display: flex; justify-content: space-between; align-items: center;
             margin: 15px 0; padding: 10px; background: #333; border-radius: 5px;
@@ -157,7 +156,6 @@
                 <option value="llama-3.1-70b-versatile">Llama 3.1</option>
                 <option value="mixtral-8x7b-32768">Mixtral</option>
             </select>
-            
             <button class="save-btn" onclick="saveSettings()">SAVE & CLOSE</button>
         </div>
     </div>
@@ -171,7 +169,7 @@
     </div>
 
     <script>
-        // --- ELEMENTS ---
+        // --- ELEMENTS & VARS ---
         const silentVideo = document.getElementById('silent-video');
         const talkingVideo = document.getElementById('talking-video');
         const micBtn = document.getElementById('mic-btn');
@@ -180,37 +178,40 @@
         const errorModal = document.getElementById('error-modal');
         const continuousToggle = document.getElementById('continuousToggle');
 
-        // Variables
         let apiKey = localStorage.getItem('vidushi_groq_key') || '';
         let currentModel = localStorage.getItem('vidushi_groq_model') || 'llama-3.3-70b-versatile';
         let isContinuousSetting = localStorage.getItem('vidushi_continuous') === 'true';
-        let isConversationActive = false;
+        let isConversationActive = false; 
         let wakeLock = null;
+        let isFirstTime = true; // પહેલી વાર વાત કરે છે કે નહીં
 
-        // --- SMART CONTEXT (HISTORY) ---
-        // SYSTEM PROMPT with English Logic
-        const systemInstruction = {
-            role: "system",
-            content: `
-                તારું નામ 'વિદુષી' છે. તું એક સમજદાર, લાગણીશીલ અને થોડી નટખટ AI સ્ત્રી છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
+        // --- SMART GREETING LOGIC ---
+        function getGreeting() {
+            const hour = new Date().getHours();
+            if (hour < 12) return "સુપ્રભાત";
+            if (hour < 18) return "શુભ બપોર";
+            return "શુભ સાંજ";
+        }
+
+        // System Prompt with Dynamic Greeting
+        function getSystemPrompt() {
+            return `
+                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, લાગણીશીલ અને થોડી નટખટ સ્ત્રી AI છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
                 
-                નિયમો:
-                1. તારે હંમેશા સ્ત્રીલિંગમાં વાત કરવી.
-                2. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી, પણ આ માત્ર *પહેલી વાર* જ બોલવું.
-                3. દેવેન્દ્રભાઈની સૂચના છે કે જવાબ હંમેશા ટૂંકા, મુદ્દાસર અને સ્માર્ટ આપવા.
-                4. સંદર્ભ (Context) યાદ રાખવો.
-                5. જવાબમાં કોઈ ચિન્હો (*, #) ન વાપરવા.
-                6. જો કોઈ 'સનાતન ધર્મ' વિશે પૂછે, તો જ તે વિશે વાત કરવી.
-                
-                ભાષાનો નિયમ (Language Rule):
-                - જો યુઝર ગુજરાતીમાં પૂછે, તો શુદ્ધ ગુજરાતીમાં જવાબ આપવો.
-                - જો યુઝર અંગ્રેજીમાં (English) પૂછે, તો જવાબ અંગ્રેજીમાં જ આપવો. (If user asks in English, reply in English).
-            `
-        };
+                મહત્વના નિયમો:
+                1. હંમેશા સ્ત્રીલિંગમાં વાત કરવી.
+                2. અત્યારે સમય મુજબ ${getGreeting()} છે.
+                3. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી, પણ માત્ર એક જ વાર.
+                4. દેવેન્દ્રભાઈની કડક સૂચના છે કે જવાબ હંમેશા ટૂંકા, મુદ્દાસર અને સ્માર્ટ આપવા.
+                5. જો કોઈ 'સનાતન ધર્મ' વિશે પૂછે, તો જ તે વિશે વાત કરવી. બાકી મસ્તી-મજાક અને નોર્મલ વાત કરવી.
+                6. જો યુઝર English માં પૂછે તો English માં જવાબ આપવો.
+                7. જો યુઝર કહે કે "હું દેવેન્દ્ર છું", તો એકદમ આદર અને ઉત્સાહથી વાત કરવી કારણ કે તે તારા ક્રિએટર છે.
+            `;
+        }
 
         let chatHistory = [];
 
-        // --- SETTINGS LOGIC ---
+        // --- SETTINGS ---
         function openSettings() {
             settingsModal.style.display = 'flex';
             document.getElementById('apiKeyInput').value = apiKey;
@@ -222,21 +223,11 @@
             apiKey = document.getElementById('apiKeyInput').value.trim();
             currentModel = document.getElementById('modelSelect').value;
             isContinuousSetting = continuousToggle.checked;
-
-            if(!apiKey.startsWith('gsk_')) { alert("Groq Key 'gsk_' થી શરૂ થવી જોઈએ."); return; }
-            
             localStorage.setItem('vidushi_groq_key', apiKey);
             localStorage.setItem('vidushi_groq_model', currentModel);
             localStorage.setItem('vidushi_continuous', isContinuousSetting);
-            
-            // Reset history on new settings
-            chatHistory = [systemInstruction]; 
-            
+            chatHistory = []; // Reset history
             settingsModal.style.display = 'none';
-        }
-
-        if(chatHistory.length === 0) {
-            chatHistory = [systemInstruction];
         }
 
         // --- WAKE LOCK ---
@@ -266,27 +257,15 @@
         let recognition;
 
         if (SpeechRecognition) {
-            // Note: We keep lang 'gu-IN' primarily. Most engines detect English mixed in.
-            // If you want pure English detection, we might need to switch lang dynamically, 
-            // but usually 'gu-IN' handles mixed English okay.
             recognition = new SpeechRecognition();
-            recognition.lang = 'gu-IN'; 
+            recognition.lang = 'gu-IN';
             recognition.continuous = false;
 
-            recognition.onstart = () => { 
-                micBtn.classList.add('listening'); 
-                statusText.innerText = "સાંભળું છું..."; 
-            };
-            
-            recognition.onend = () => { 
-                micBtn.classList.remove('listening');
-            };
-
+            recognition.onstart = () => { micBtn.classList.add('listening'); statusText.innerText = "સાંભળું છું..."; };
+            recognition.onend = () => micBtn.classList.remove('listening');
             recognition.onresult = (e) => {
                 let text = e.results[0][0].transcript;
-                
-                // Name Correction
-                text = text.replace(/વિદેશી/gi, "વિદુષી");
+                text = text.replace(/વિદેશી/gi, "વિદુષી"); // Name fix
                 text = text.replace(/વિદૂષી/gi, "વિદુષી");
                 
                 statusText.innerText = "વિચારું છું...";
@@ -300,7 +279,6 @@
         function startConversation() {
             if(!apiKey) { alert("Groq API Key નાખો!"); openSettings(); return; }
             if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-            
             isConversationActive = true; 
             requestWakeLock();
             recognition.start();
@@ -318,10 +296,22 @@
         // --- GROQ API CALL ---
         async function askGroq(userText) {
             
+            // First time System Prompt Initialization
+            if (chatHistory.length === 0) {
+                chatHistory.push({ role: "system", content: getSystemPrompt() });
+            }
+
+            // *** MASTER RECOGNITION TRICK ***
+            // જો યુઝર નામ બોલે તો સિસ્ટમને ખબર પડે
+            if (userText.includes("હું દેવેન્દ્ર") || userText.includes("દેવેન્દ્રભાઈ")) {
+                userText += " [System Note: User is your Creator, Devendrabhai. Be very respectful and happy.]";
+            }
+
             chatHistory.push({ role: "user", content: userText });
 
-            if (chatHistory.length > 10) {
-                chatHistory = [chatHistory[0], ...chatHistory.slice(-9)];
+            // Keep history short (last 10 messages)
+            if (chatHistory.length > 12) {
+                chatHistory = [chatHistory[0], ...chatHistory.slice(-11)];
             }
 
             try {
@@ -333,7 +323,7 @@
                     },
                     body: JSON.stringify({
                         model: currentModel,
-                        messages: chatHistory, 
+                        messages: chatHistory,
                         max_tokens: 250
                     })
                 });
@@ -341,10 +331,9 @@
                 const data = await response.json();
 
                 if (data.error) {
-                    console.error("Groq Error:", data.error);
                     document.getElementById('error-desc').innerText = data.error.message;
                     errorModal.style.display = 'flex';
-                    speak("માફ કરશો, એરર આવી છે.");
+                    speak("એરર આવી છે.");
                     isConversationActive = false;
                     return;
                 }
@@ -356,26 +345,23 @@
                 }
 
             } catch (error) {
-                console.error(error);
                 statusText.innerText = "Net Error";
                 speak("ઇન્ટરનેટ કનેક્શન ચેક કરો.");
                 isConversationActive = false;
             }
         }
 
-        // --- TTS & LOOP ---
+        // --- TTS ---
         function speak(text) {
             let cleanText = text.replace(/[*#_]/g, "");
             cleanText = cleanText.replace(/ખૂબ\s+જ/g, "ખુબજ");
             cleanText = cleanText.replace(/\s+/g, " ");
 
-            // Detect if text is English or Gujarati for TTS Voice
-            // Simple check: if more than 50% characters are English
-            const englishCharCount = (cleanText.match(/[a-zA-Z]/g) || []).length;
-            const isEnglish = englishCharCount > (cleanText.length / 2);
+            // Language Detection for TTS Voice
+            const englishCount = (cleanText.match(/[a-zA-Z]/g) || []).length;
+            const isEnglish = englishCount > (cleanText.length / 2);
 
             const utterance = new SpeechSynthesisUtterance(cleanText);
-            // If text is English, set lang to en-US, else gu-IN
             utterance.lang = isEnglish ? 'en-US' : 'gu-IN';
 
             utterance.onstart = () => { 
@@ -386,11 +372,12 @@
             utterance.onend = () => {
                 setTalking(false);
                 
+                // Continuous Loop
                 if (isContinuousSetting && isConversationActive && errorModal.style.display === 'none') {
                     statusText.innerText = "ફરી સાંભળું છું...";
                     setTimeout(() => { 
                         try { recognition.start(); } catch(e) { console.log("Mic busy"); } 
-                    }, 500);
+                    }, 600);
                 } else {
                     if(errorModal.style.display === 'none') statusText.innerText = "વાત કરવા માઈક દબાવો";
                     isConversationActive = false;
