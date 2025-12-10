@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi AI - Ultimate</title>
+    <title>Vidushi AI - Final Fix</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- BASIC SETUP --- */
@@ -85,11 +85,10 @@
             width: 85%; max-width: 350px; border: 1px solid orange;
             color: white; text-align: center;
         }
-        input, select, textarea {
+        input, select {
             width: 100%; padding: 12px; margin: 10px 0;
             background: #333; color: white; border: 1px solid #555; border-radius: 5px;
         }
-        textarea { height: 100px; font-size: 12px; }
         .save-btn {
             width: 100%; padding: 12px; background: orange;
             border: none; font-weight: bold; cursor: pointer; color: black; margin-top: 10px;
@@ -126,9 +125,9 @@
             
             <label style="display:block; text-align:left; color:orange;">Model:</label>
             <select id="modelSelect">
-                <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
+                <option value="gemini-flash-latest" selected>Gemini Flash Latest (High Limit)</option>
                 <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
-                <option value="gemini-exp-1206">Gemini Exp 1206</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
             </select>
             
             <button class="save-btn" onclick="saveSettings()">SAVE & CLOSE</button>
@@ -137,9 +136,9 @@
 
     <div id="error-modal">
         <div class="settings-box" style="border-color: red;">
-            <h3 style="color: red;">⚠️ Critical Error</h3>
-            <p id="error-desc" style="font-size: 13px;"></p>
-            <button class="save-btn" onclick="document.getElementById('error-modal').style.display='none'">CLOSE</button>
+            <h3 style="color: red;">⚠️ Limit Over</h3>
+            <p>તમારી API Key ની લિમિટ પૂરી થઈ ગઈ છે. કૃપા કરીને નવી Key વાપરો.</p>
+            <button class="save-btn" onclick="openSettings(); document.getElementById('error-modal').style.display='none'">CHANGE KEY</button>
         </div>
     </div>
 
@@ -153,7 +152,7 @@
         const errorModal = document.getElementById('error-modal');
 
         let apiKey = localStorage.getItem('vidushi_key') || '';
-        let currentModel = localStorage.getItem('vidushi_model') || 'gemini-2.5-flash';
+        let currentModel = localStorage.getItem('vidushi_model') || 'gemini-flash-latest';
         let isContinuousMode = false;
         let wakeLock = null;
 
@@ -209,7 +208,7 @@
             recognition.onresult = (e) => {
                 const text = e.results[0][0].transcript;
                 statusText.innerText = "વિચારું છું...";
-                askGeminiSafe(text); // Safe Call
+                askGeminiSafe(text);
             };
         } else {
             statusText.innerText = "Mic Not Supported";
@@ -233,17 +232,17 @@
             statusText.innerText = "વાતચીત બંધ કરી";
         }
 
-        // --- ULTIMATE API CALL (SAFETY LOOP) ---
+        // --- API CALL WITH BACKUP ---
         async function askGeminiSafe(userText) {
             const systemPrompt = `તારું નામ 'વિદુષી' છે. તું 'દેવેન્દ્રભાઈ' દ્વારા બનાવવામાં આવી છે. નિયમો: સનાતન ધર્મ વિશે પૂછે તો જ કહેવું. જવાબ ગુજરાતીમાં, ટૂંકો આપવો.`;
             
-            // આ લિસ્ટમાં 1.5 રાખ્યું જ નથી એટલે 404 આવશે નહીં.
-            // જે તમારા લિસ્ટમાં હતા તે જ છે.
+            // Backup Models List (Latest to Oldest)
+            // gemini-flash-latest = Usually high quota
             const backupModels = [
-                currentModel,       // User Choice
-                "gemini-2.0-flash-exp",
-                "gemini-exp-1206",
-                "gemini-2.5-pro"
+                currentModel, 
+                "gemini-flash-latest", 
+                "gemini-pro-latest",
+                "gemini-2.0-flash-exp"
             ];
             
             const uniqueModels = [...new Set(backupModels)];
@@ -260,17 +259,16 @@
 
                     const data = await response.json();
 
-                    // જો Error આવે તો Loop ચાલુ રાખો (Next Model)
                     if (data.error) {
                         console.log(`Failed on ${model}:`, data.error.message);
-                        continue;
+                        continue; // Next model
                     }
 
                     if (data.candidates) {
                         const reply = data.candidates[0].content.parts[0].text;
                         speak(reply);
                         success = true;
-                        break; // Success! Loop ends.
+                        break; 
                     }
                 } catch (e) {
                     console.log("Net Error", model);
@@ -278,11 +276,9 @@
             }
 
             if (!success) {
-                // જો બધા મોડેલ ફેલ થાય તો જ એરર બતાવવી
-                statusText.innerText = "All Models Failed";
-                document.getElementById('error-desc').innerText = "તમારી API Key ની લિમિટ પૂરી થઈ ગઈ છે અથવા કી બ્લોક છે. કોઈ પણ મોડેલ ચાલતું નથી.";
+                statusText.innerText = "Limit Finished";
                 errorModal.style.display = 'flex';
-                speak("માફ કરશો, મારી સિસ્ટમ કામ નથી કરતી.");
+                speak("તમારી API લિમિટ પૂરી થઈ ગઈ છે. નવી કી નાખો.");
                 isContinuousMode = false;
             }
         }
