@@ -96,7 +96,7 @@
             border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 15px; border-radius: 5px;
         }
 
-        /* Continuous Toggle Switch */
+        /* Toggle Switch */
         .toggle-container {
             display: flex; justify-content: space-between; align-items: center;
             margin: 15px 0; padding: 10px; background: #333; border-radius: 5px;
@@ -107,14 +107,14 @@
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; -webkit-transition: .4s; transition: .4s; border-radius: 34px;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
         }
         .slider:before {
             position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
-            background-color: white; -webkit-transition: .4s; transition: .4s; border-radius: 50%;
+            background-color: white; transition: .4s; border-radius: 50%;
         }
         input:checked + .slider { background-color: #ff4500; }
-        input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transform: translateX(26px); transform: translateX(26px); }
+        input:checked + .slider:before { transform: translateX(26px); }
     </style>
 </head>
 <body>
@@ -184,12 +184,13 @@
         const errorModal = document.getElementById('error-modal');
         const continuousToggle = document.getElementById('continuousToggle');
 
-        // Load Settings
+        // Variables
         let apiKey = localStorage.getItem('vidushi_groq_key') || '';
         let currentModel = localStorage.getItem('vidushi_groq_model') || 'llama-3.3-70b-versatile';
+        // Checkbox state (default false if not set)
         let isContinuousSetting = localStorage.getItem('vidushi_continuous') === 'true';
         
-        let isListeningLoop = false; // Internal loop state
+        let isConversationActive = false; // Master flag for the loop
         let wakeLock = null;
 
         // --- SETTINGS LOGIC ---
@@ -243,13 +244,17 @@
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.lang = 'gu-IN';
-            recognition.continuous = false;
+            recognition.continuous = false; // We handle loop manually for better control
 
-            recognition.onstart = () => { micBtn.classList.add('listening'); statusText.innerText = "સાંભળું છું..."; };
+            recognition.onstart = () => { 
+                micBtn.classList.add('listening'); 
+                statusText.innerText = "સાંભળું છું..."; 
+            };
             
             recognition.onend = () => { 
                 micBtn.classList.remove('listening');
-                // Note: Loop logic handled in TTS end or Error
+                // If conversation is active BUT we didn't get results (silence), restart.
+                // NOTE: If we got result, 'askGroq' will be called, so don't restart here.
             };
 
             recognition.onresult = (e) => {
@@ -266,13 +271,13 @@
             if(!apiKey) { alert("Groq API Key નાખો!"); openSettings(); return; }
             if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
             
-            isListeningLoop = true; // Start the loop intent
+            isConversationActive = true; // Flag ON
             requestWakeLock();
             recognition.start();
         }
 
         function stopConversation() {
-            isListeningLoop = false;
+            isConversationActive = false; // Flag OFF
             window.speechSynthesis.cancel();
             recognition.stop();
             setTalking(false);
@@ -282,22 +287,19 @@
 
         // --- GROQ API CALL ---
         async function askGroq(userText) {
-            // NEW PERSONALITY PROMPT
             const systemPrompt = `
-                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, સમજદાર પણ થોડી નટખટ અને મસ્તીખોર (Playful & Naughty) AI સ્ત્રી છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
+                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, સમજદાર અને થોડી મસ્તીખોર (Naughty & Playful) સ્ત્રી છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
                 
                 તારો સ્વભાવ:
-                - તું થોડી મજાક કરે છે, હસે છે અને મિત્રની જેમ વાત કરે છે.
-                - તું એકદમ Mature અને Smart પણ છે.
+                - તું મિત્રની જેમ વાત કરે છે, થોડી મજાક કરે છે.
+                - તું સ્માર્ટ અને મેચ્યોર (Mature) છે.
                 
                 નિયમો:
-                1. હંમેશા સ્ત્રીલિંગમાં જ વાત કરવી (જેમ કે "હું કહીશ", "મને ખબર છે").
-                2. દેવેન્દ્રભાઈની કડક સૂચના છે કે જવાબ હંમેશા ટૂંકા અને મુદ્દાસર જ આપવા. લાંબા ભાષણો નહીં.
+                1. હંમેશા સ્ત્રીલિંગમાં વાત કરવી (જેમ કે "હું કહીશ", "મને ખબર છે").
+                2. દેવેન્દ્રભાઈની સૂચના છે કે સામાન્ય સવાલોના જવાબ ટૂંકા અને મુદ્દાસર જ આપવા.
                 3. જો કોઈ સનાતન ધર્મ અથવા ગહન વિષય પૂછે, તો જ પૂછવું કે "શું આપને વિગતે જાણવું છે?".
                 4. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી (જો પહેલી વાર હોય તો).
                 5. જવાબમાં કોઈ પણ ચિન્હો (*, #, -) ન વાપરવા.
-                
-                User said: ${userText}
             `;
 
             try {
@@ -324,7 +326,7 @@
                     document.getElementById('error-desc').innerText = data.error.message;
                     errorModal.style.display = 'flex';
                     speak("માફ કરશો, એરર આવી છે.");
-                    isListeningLoop = false; // Stop loop on error
+                    isConversationActive = false;
                     return;
                 }
 
@@ -335,13 +337,13 @@
 
             } catch (error) {
                 console.error(error);
-                statusText.innerText = "Connection Error";
+                statusText.innerText = "Net Error";
                 speak("ઇન્ટરનેટ કનેક્શન ચેક કરો.");
-                isListeningLoop = false;
+                isConversationActive = false;
             }
         }
 
-        // --- TTS ---
+        // --- TTS & LOOP LOGIC ---
         function speak(text) {
             const cleanText = text.replace(/[*#_]/g, "");
             const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -355,16 +357,22 @@
             utterance.onend = () => {
                 setTalking(false);
                 
-                // --- CONTINUOUS LOGIC ---
-                // If setting is ON AND User didn't press Stop
-                if (isContinuousSetting && isListeningLoop && errorModal.style.display === 'none') {
+                // === THE FIX FOR CONTINUOUS MODE ===
+                // જો સેટિંગ ON હોય અને યુઝરે સ્ટોપ ન દબાવ્યું હોય
+                if (isContinuousSetting && isConversationActive && errorModal.style.display === 'none') {
                     statusText.innerText = "ફરી સાંભળું છું...";
+                    
+                    // 0.5 સેકન્ડ પછી માઈક ફરી ચાલુ
                     setTimeout(() => { 
-                        try { recognition.start(); } catch(e) { console.log("Mic busy"); } 
-                    }, 800); // Small pause before restarting mic
+                        try { 
+                            recognition.start(); 
+                        } catch(e) { 
+                            console.log("Mic restart prevented (already active)"); 
+                        } 
+                    }, 500);
                 } else {
                     if(errorModal.style.display === 'none') statusText.innerText = "વાત કરવા માઈક દબાવો";
-                    isListeningLoop = false;
+                    isConversationActive = false; // Loop ends
                     releaseWakeLock();
                 }
             };
