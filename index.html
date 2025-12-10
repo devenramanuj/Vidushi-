@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi AI - Groq (Free & Fast)</title>
+    <title>Vidushi AI - Groq Updated</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- BASIC SETUP --- */
@@ -107,7 +107,7 @@
         </video>
     </div>
 
-    <div id="top-bar">વિદુષી AI (Groq Llama 3)</div>
+    <div id="top-bar">વિદુષી AI (Groq Llama 3.3)</div>
     <button id="settings-btn" onclick="openSettings()"><i class="fas fa-cog"></i></button>
 
     <div id="mic-container">
@@ -122,15 +122,16 @@
     <div id="settings-modal">
         <div class="settings-box">
             <h3>Groq API Settings</h3>
-            <p style="font-size:12px; color:#aaa;">Key starts with 'gsk_...'</p>
+            <p style="font-size:12px; color:#aaa;">New Models Updated!</p>
             
             <label style="display:block; text-align:left; color:#f55036;">API Key:</label>
             <input type="password" id="apiKeyInput" placeholder="gsk_...">
             
             <label style="display:block; text-align:left; color:#f55036;">Model:</label>
             <select id="modelSelect">
-                <option value="llama3-70b-8192" selected>Llama 3 (70B) - Best</option>
-                <option value="llama3-8b-8192">Llama 3 (8B) - Fastest</option>
+                <option value="llama-3.3-70b-versatile" selected>Llama 3.3 (New & Best)</option>
+                <option value="llama-3.1-70b-versatile">Llama 3.1 (Stable)</option>
+                <option value="llama-3.1-8b-instant">Llama 3.1 (Fastest)</option>
                 <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
             </select>
             
@@ -156,7 +157,8 @@
         const errorModal = document.getElementById('error-modal');
 
         let apiKey = localStorage.getItem('vidushi_groq_key') || '';
-        let currentModel = localStorage.getItem('vidushi_groq_model') || 'llama3-70b-8192';
+        // Updated Default Model
+        let currentModel = localStorage.getItem('vidushi_groq_model') || 'llama-3.3-70b-versatile';
         let isContinuousMode = false;
         let wakeLock = null;
 
@@ -259,7 +261,7 @@
                             { role: "system", content: systemPrompt },
                             { role: "user", content: userText }
                         ],
-                        max_tokens: 150
+                        max_tokens: 200
                     })
                 });
 
