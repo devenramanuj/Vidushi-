@@ -188,10 +188,7 @@
         let wakeLock = null;
 
         // --- SMART CONTEXT (HISTORY) ---
-        // વાતચીત યાદ રાખવા માટેનું લિસ્ટ
-        let chatHistory = [];
-
-        // બોટનું વ્યક્તિત્વ (System Prompt)
+        // SYSTEM PROMPT with English Logic
         const systemInstruction = {
             role: "system",
             content: `
@@ -199,13 +196,19 @@
                 
                 નિયમો:
                 1. તારે હંમેશા સ્ત્રીલિંગમાં વાત કરવી.
-                2. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી, પણ આ માત્ર *પહેલી વાર* જ બોલવું. ત્યાર પછીની વાતચીતમાં વારંવાર ન બોલવું.
+                2. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી, પણ આ માત્ર *પહેલી વાર* જ બોલવું.
                 3. દેવેન્દ્રભાઈની સૂચના છે કે જવાબ હંમેશા ટૂંકા, મુદ્દાસર અને સ્માર્ટ આપવા.
-                4. સંદર્ભ (Context) યાદ રાખવો. જેમ કે, જો પૂછે "તેનું નામ શું?" તો આગળ કોની વાત થઈ હતી તે યાદ હોવું જોઈએ.
+                4. સંદર્ભ (Context) યાદ રાખવો.
                 5. જવાબમાં કોઈ ચિન્હો (*, #) ન વાપરવા.
                 6. જો કોઈ 'સનાતન ધર્મ' વિશે પૂછે, તો જ તે વિશે વાત કરવી.
+                
+                ભાષાનો નિયમ (Language Rule):
+                - જો યુઝર ગુજરાતીમાં પૂછે, તો શુદ્ધ ગુજરાતીમાં જવાબ આપવો.
+                - જો યુઝર અંગ્રેજીમાં (English) પૂછે, તો જવાબ અંગ્રેજીમાં જ આપવો. (If user asks in English, reply in English).
             `
         };
+
+        let chatHistory = [];
 
         // --- SETTINGS LOGIC ---
         function openSettings() {
@@ -226,13 +229,12 @@
             localStorage.setItem('vidushi_groq_model', currentModel);
             localStorage.setItem('vidushi_continuous', isContinuousSetting);
             
-            // સેટિંગ સેવ થાય ત્યારે હિસ્ટ્રી રીસેટ કરો જેથી નવી વાત શરૂ થાય
+            // Reset history on new settings
             chatHistory = [systemInstruction]; 
             
             settingsModal.style.display = 'none';
         }
 
-        // Initialize Chat History on Load
         if(chatHistory.length === 0) {
             chatHistory = [systemInstruction];
         }
@@ -264,8 +266,11 @@
         let recognition;
 
         if (SpeechRecognition) {
+            // Note: We keep lang 'gu-IN' primarily. Most engines detect English mixed in.
+            // If you want pure English detection, we might need to switch lang dynamically, 
+            // but usually 'gu-IN' handles mixed English okay.
             recognition = new SpeechRecognition();
-            recognition.lang = 'gu-IN';
+            recognition.lang = 'gu-IN'; 
             recognition.continuous = false;
 
             recognition.onstart = () => { 
@@ -280,10 +285,9 @@
             recognition.onresult = (e) => {
                 let text = e.results[0][0].transcript;
                 
-                // --- SMART NAME CORRECTION ---
-                // જો "વિદેશી" સંભળાય તો "વિદુષી" કરી નાખવું
+                // Name Correction
                 text = text.replace(/વિદેશી/gi, "વિદુષી");
-                text = text.replace(/વિદૂષી/gi, "વિદુષી"); // જોડણી સુધારો
+                text = text.replace(/વિદૂષી/gi, "વિદુષી");
                 
                 statusText.innerText = "વિચારું છું...";
                 askGroq(text);
@@ -309,20 +313,14 @@
             setTalking(false);
             releaseWakeLock();
             statusText.innerText = "વાતચીત બંધ કરી";
-            
-            // રિસેટ હિસ્ટ્રી (વૈકલ્પિક: જો સ્ટોપ દબાવે તો ભૂલી જવું હોય તો)
-            // chatHistory = [systemInstruction]; 
         }
 
-        // --- GROQ API CALL (WITH MEMORY) ---
+        // --- GROQ API CALL ---
         async function askGroq(userText) {
             
-            // 1. યુઝરનો મેસેજ હિસ્ટ્રીમાં ઉમેરો
             chatHistory.push({ role: "user", content: userText });
 
-            // 2. હિસ્ટ્રી બહુ મોટી થઈ જાય તો જૂની વાતો કાઢી નાખો (Memory Optimization)
             if (chatHistory.length > 10) {
-                // પહેલો મેસેજ (System Prompt) રાખીને વચ્ચેના કાઢો
                 chatHistory = [chatHistory[0], ...chatHistory.slice(-9)];
             }
 
@@ -335,7 +333,7 @@
                     },
                     body: JSON.stringify({
                         model: currentModel,
-                        messages: chatHistory, // આખી હિસ્ટ્રી મોકલો
+                        messages: chatHistory, 
                         max_tokens: 250
                     })
                 });
@@ -353,10 +351,7 @@
 
                 if (data.choices && data.choices[0]) {
                     const reply = data.choices[0].message.content;
-                    
-                    // 3. બોટનો જવાબ હિસ્ટ્રીમાં ઉમેરો
                     chatHistory.push({ role: "assistant", content: reply });
-                    
                     speak(reply);
                 }
 
@@ -368,14 +363,20 @@
             }
         }
 
-        // --- TTS & LOOP LOGIC ---
+        // --- TTS & LOOP ---
         function speak(text) {
             let cleanText = text.replace(/[*#_]/g, "");
             cleanText = cleanText.replace(/ખૂબ\s+જ/g, "ખુબજ");
             cleanText = cleanText.replace(/\s+/g, " ");
 
+            // Detect if text is English or Gujarati for TTS Voice
+            // Simple check: if more than 50% characters are English
+            const englishCharCount = (cleanText.match(/[a-zA-Z]/g) || []).length;
+            const isEnglish = englishCharCount > (cleanText.length / 2);
+
             const utterance = new SpeechSynthesisUtterance(cleanText);
-            utterance.lang = 'gu-IN';
+            // If text is English, set lang to en-US, else gu-IN
+            utterance.lang = isEnglish ? 'en-US' : 'gu-IN';
 
             utterance.onstart = () => { 
                 if(errorModal.style.display === 'none') statusText.innerText = "બોલી રહી છું..."; 
@@ -385,7 +386,6 @@
             utterance.onend = () => {
                 setTalking(false);
                 
-                // Continuous Loop Logic
                 if (isContinuousSetting && isConversationActive && errorModal.style.display === 'none') {
                     statusText.innerText = "ફરી સાંભળું છું...";
                     setTimeout(() => { 
