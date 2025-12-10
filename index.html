@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi AI</title>
+    <title>Vidushi</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- BASIC SETUP --- */
@@ -23,15 +23,16 @@
         /* --- UI LAYER --- */
         #top-bar {
             position: fixed; top: 0; left: 0; width: 100%; padding: 15px 0;
-            background: rgba(0, 0, 0, 0.6); color: white; text-align: center;
-            font-size: 22px; font-weight: bold; z-index: 10;
-            text-shadow: 1px 1px 2px black; letter-spacing: 1px;
+            background: rgba(0, 0, 0, 0.5); color: white; text-align: center;
+            font-size: 24px; font-weight: bold; z-index: 10;
+            text-shadow: 1px 1px 2px black; letter-spacing: 2px;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         #settings-btn {
             position: fixed; top: 5px; right: 15px; z-index: 20;
             background: transparent; color: white; border: none;
-            font-size: 24px; padding: 10px; cursor: pointer;
+            font-size: 26px; padding: 10px; cursor: pointer;
         }
 
         #mic-container {
@@ -50,11 +51,11 @@
         .controls-row { display: flex; align-items: center; gap: 20px; }
 
         #mic-btn {
-            width: 75px; height: 75px; border-radius: 50%;
-            background: #f55036; /* Groq Orange */
-            border: 3px solid white;
-            color: white; font-size: 32px; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #ff4500; /* Orange */
+            border: 4px solid white;
+            color: white; font-size: 35px; cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             display: flex; align-items: center; justify-content: center;
             transition: transform 0.2s;
         }
@@ -82,8 +83,8 @@
             z-index: 100; justify-content: center; align-items: center;
         }
         .settings-box {
-            background: #222; padding: 25px; border-radius: 12px;
-            width: 85%; max-width: 350px; border: 1px solid #f55036;
+            background: #222; padding: 25px; border-radius: 15px;
+            width: 85%; max-width: 350px; border: 1px solid #ff4500;
             color: white; text-align: center;
         }
         input, select {
@@ -91,9 +92,29 @@
             background: #333; color: white; border: 1px solid #555; border-radius: 5px;
         }
         .save-btn {
-            width: 100%; padding: 12px; background: #f55036;
-            border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 10px;
+            width: 100%; padding: 12px; background: #ff4500;
+            border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 15px; border-radius: 5px;
         }
+
+        /* Continuous Toggle Switch */
+        .toggle-container {
+            display: flex; justify-content: space-between; align-items: center;
+            margin: 15px 0; padding: 10px; background: #333; border-radius: 5px;
+        }
+        .switch {
+            position: relative; display: inline-block; width: 50px; height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; -webkit-transition: .4s; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+            background-color: white; -webkit-transition: .4s; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #ff4500; }
+        input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transform: translateX(26px); transform: translateX(26px); }
     </style>
 </head>
 <body>
@@ -107,7 +128,7 @@
         </video>
     </div>
 
-    <div id="top-bar">વિદુષી AI</div>
+    <div id="top-bar">વિદુષી</div>
     <button id="settings-btn" onclick="openSettings()"><i class="fas fa-cog"></i></button>
 
     <div id="mic-container">
@@ -121,16 +142,24 @@
 
     <div id="settings-modal">
         <div class="settings-box">
-            <h3>Groq API Settings</h3>
+            <h3 style="margin-top:0;">સેટિંગ્સ</h3>
             
-            <label style="display:block; text-align:left; color:#f55036;">API Key:</label>
+            <label style="display:block; text-align:left; color:#ff4500; font-size:14px;">Groq API Key:</label>
             <input type="password" id="apiKeyInput" placeholder="gsk_...">
             
-            <label style="display:block; text-align:left; color:#f55036;">Model:</label>
+            <div class="toggle-container">
+                <span style="font-size:14px;">સતત વાતચીત (Continuous)</span>
+                <label class="switch">
+                    <input type="checkbox" id="continuousToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <label style="display:block; text-align:left; color:#ff4500; font-size:14px;">Model:</label>
             <select id="modelSelect">
-                <option value="llama-3.3-70b-versatile" selected>Llama 3.3 (New & Best)</option>
-                <option value="llama-3.1-70b-versatile">Llama 3.1 (Stable)</option>
-                <option value="llama-3.1-8b-instant">Llama 3.1 (Fastest)</option>
+                <option value="llama-3.3-70b-versatile" selected>Llama 3.3 (Best)</option>
+                <option value="llama-3.1-70b-versatile">Llama 3.1</option>
+                <option value="mixtral-8x7b-32768">Mixtral</option>
             </select>
             
             <button class="save-btn" onclick="saveSettings()">SAVE & CLOSE</button>
@@ -153,25 +182,35 @@
         const statusText = document.getElementById('status-text');
         const settingsModal = document.getElementById('settings-modal');
         const errorModal = document.getElementById('error-modal');
+        const continuousToggle = document.getElementById('continuousToggle');
 
+        // Load Settings
         let apiKey = localStorage.getItem('vidushi_groq_key') || '';
         let currentModel = localStorage.getItem('vidushi_groq_model') || 'llama-3.3-70b-versatile';
-        let isContinuousMode = false;
+        let isContinuousSetting = localStorage.getItem('vidushi_continuous') === 'true';
+        
+        let isListeningLoop = false; // Internal loop state
         let wakeLock = null;
 
-        // --- SETTINGS ---
+        // --- SETTINGS LOGIC ---
         function openSettings() {
             settingsModal.style.display = 'flex';
             document.getElementById('apiKeyInput').value = apiKey;
             document.getElementById('modelSelect').value = currentModel;
+            continuousToggle.checked = isContinuousSetting;
         }
 
         function saveSettings() {
             apiKey = document.getElementById('apiKeyInput').value.trim();
             currentModel = document.getElementById('modelSelect').value;
+            isContinuousSetting = continuousToggle.checked;
+
             if(!apiKey.startsWith('gsk_')) { alert("Groq Key 'gsk_' થી શરૂ થવી જોઈએ."); return; }
+            
             localStorage.setItem('vidushi_groq_key', apiKey);
             localStorage.setItem('vidushi_groq_model', currentModel);
+            localStorage.setItem('vidushi_continuous', isContinuousSetting);
+            
             settingsModal.style.display = 'none';
         }
 
@@ -207,7 +246,12 @@
             recognition.continuous = false;
 
             recognition.onstart = () => { micBtn.classList.add('listening'); statusText.innerText = "સાંભળું છું..."; };
-            recognition.onend = () => micBtn.classList.remove('listening');
+            
+            recognition.onend = () => { 
+                micBtn.classList.remove('listening');
+                // Note: Loop logic handled in TTS end or Error
+            };
+
             recognition.onresult = (e) => {
                 const text = e.results[0][0].transcript;
                 statusText.innerText = "વિચારું છું...";
@@ -221,13 +265,14 @@
         function startConversation() {
             if(!apiKey) { alert("Groq API Key નાખો!"); openSettings(); return; }
             if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-            isContinuousMode = true;
+            
+            isListeningLoop = true; // Start the loop intent
             requestWakeLock();
             recognition.start();
         }
 
         function stopConversation() {
-            isContinuousMode = false;
+            isListeningLoop = false;
             window.speechSynthesis.cancel();
             recognition.stop();
             setTalking(false);
@@ -237,16 +282,22 @@
 
         // --- GROQ API CALL ---
         async function askGroq(userText) {
-            // Updated Persona & Instructions
+            // NEW PERSONALITY PROMPT
             const systemPrompt = `
-                તારું નામ 'વિદુષી' છે. તું એક સ્ત્રી AI બોટ છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
+                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, સમજદાર પણ થોડી નટખટ અને મસ્તીખોર (Playful & Naughty) AI સ્ત્રી છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
                 
-                મહત્વના નિયમો:
-                1. તારે હંમેશા સ્ત્રીલિંગમાં વાત કરવી (જેમ કે "હું કહીશ", "મને ખબર છે").
-                2. દેવેન્દ્રભાઈની કડક સૂચના છે કે જવાબ હંમેશા ટૂંકા અને મુદ્દાસર જ આપવા.
-                3. જો કોઈ સનાતન ધર્મ અથવા ખૂબ ગહન વિષય પૂછે, તો જ પૂછવું કે "શું આપને વિગતે જાણવું છે?". બાકીના બધા જ સવાલોના જવાબ ટૂંકમાં આપવા.
+                તારો સ્વભાવ:
+                - તું થોડી મજાક કરે છે, હસે છે અને મિત્રની જેમ વાત કરે છે.
+                - તું એકદમ Mature અને Smart પણ છે.
+                
+                નિયમો:
+                1. હંમેશા સ્ત્રીલિંગમાં જ વાત કરવી (જેમ કે "હું કહીશ", "મને ખબર છે").
+                2. દેવેન્દ્રભાઈની કડક સૂચના છે કે જવાબ હંમેશા ટૂંકા અને મુદ્દાસર જ આપવા. લાંબા ભાષણો નહીં.
+                3. જો કોઈ સનાતન ધર્મ અથવા ગહન વિષય પૂછે, તો જ પૂછવું કે "શું આપને વિગતે જાણવું છે?".
                 4. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી (જો પહેલી વાર હોય તો).
-                5. જવાબમાં કોઈ પણ ચિન્હો (*, #, -) ન વાપરવા. માત્ર સાદું ગુજરાતી લખવું.
+                5. જવાબમાં કોઈ પણ ચિન્હો (*, #, -) ન વાપરવા.
+                
+                User said: ${userText}
             `;
 
             try {
@@ -262,7 +313,7 @@
                             { role: "system", content: systemPrompt },
                             { role: "user", content: userText }
                         ],
-                        max_tokens: 200 // Force short answers
+                        max_tokens: 250
                     })
                 });
 
@@ -273,7 +324,7 @@
                     document.getElementById('error-desc').innerText = data.error.message;
                     errorModal.style.display = 'flex';
                     speak("માફ કરશો, એરર આવી છે.");
-                    isContinuousMode = false;
+                    isListeningLoop = false; // Stop loop on error
                     return;
                 }
 
@@ -284,9 +335,9 @@
 
             } catch (error) {
                 console.error(error);
-                statusText.innerText = "Network Error";
+                statusText.innerText = "Connection Error";
                 speak("ઇન્ટરનેટ કનેક્શન ચેક કરો.");
-                isContinuousMode = false;
+                isListeningLoop = false;
             }
         }
 
@@ -303,11 +354,17 @@
 
             utterance.onend = () => {
                 setTalking(false);
-                if (isContinuousMode && errorModal.style.display === 'none') {
+                
+                // --- CONTINUOUS LOGIC ---
+                // If setting is ON AND User didn't press Stop
+                if (isContinuousSetting && isListeningLoop && errorModal.style.display === 'none') {
                     statusText.innerText = "ફરી સાંભળું છું...";
-                    setTimeout(() => { try { recognition.start(); } catch(e) {} }, 1000); 
+                    setTimeout(() => { 
+                        try { recognition.start(); } catch(e) { console.log("Mic busy"); } 
+                    }, 800); // Small pause before restarting mic
                 } else {
                     if(errorModal.style.display === 'none') statusText.innerText = "વાત કરવા માઈક દબાવો";
+                    isListeningLoop = false;
                     releaseWakeLock();
                 }
             };
