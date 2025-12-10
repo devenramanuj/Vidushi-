@@ -96,14 +96,12 @@
             border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 15px; border-radius: 5px;
         }
 
-        /* Continuous Toggle Switch */
+        /* Toggle Switch */
         .toggle-container {
             display: flex; justify-content: space-between; align-items: center;
             margin: 15px 0; padding: 10px; background: #333; border-radius: 5px;
         }
-        .switch {
-            position: relative; display: inline-block; width: 50px; height: 24px;
-        }
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
@@ -133,7 +131,6 @@
 
     <div id="mic-container">
         <div id="status-text">વાત કરવા માઈક દબાવો</div>
-        
         <div class="controls-row">
             <button id="mic-btn" onclick="startConversation()"><i class="fas fa-microphone"></i></button>
             <button id="stop-btn" onclick="stopConversation()"><i class="fas fa-stop"></i></button>
@@ -143,7 +140,6 @@
     <div id="settings-modal">
         <div class="settings-box">
             <h3 style="margin-top:0;">સેટિંગ્સ</h3>
-            
             <label style="display:block; text-align:left; color:#ff4500; font-size:14px;">Groq API Key:</label>
             <input type="password" id="apiKeyInput" placeholder="gsk_...">
             
@@ -188,9 +184,28 @@
         let apiKey = localStorage.getItem('vidushi_groq_key') || '';
         let currentModel = localStorage.getItem('vidushi_groq_model') || 'llama-3.3-70b-versatile';
         let isContinuousSetting = localStorage.getItem('vidushi_continuous') === 'true';
-        
-        let isConversationActive = false; 
+        let isConversationActive = false;
         let wakeLock = null;
+
+        // --- SMART CONTEXT (HISTORY) ---
+        // વાતચીત યાદ રાખવા માટેનું લિસ્ટ
+        let chatHistory = [];
+
+        // બોટનું વ્યક્તિત્વ (System Prompt)
+        const systemInstruction = {
+            role: "system",
+            content: `
+                તારું નામ 'વિદુષી' છે. તું એક સમજદાર, લાગણીશીલ અને થોડી નટખટ AI સ્ત્રી છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
+                
+                નિયમો:
+                1. તારે હંમેશા સ્ત્રીલિંગમાં વાત કરવી.
+                2. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી, પણ આ માત્ર *પહેલી વાર* જ બોલવું. ત્યાર પછીની વાતચીતમાં વારંવાર ન બોલવું.
+                3. દેવેન્દ્રભાઈની સૂચના છે કે જવાબ હંમેશા ટૂંકા, મુદ્દાસર અને સ્માર્ટ આપવા.
+                4. સંદર્ભ (Context) યાદ રાખવો. જેમ કે, જો પૂછે "તેનું નામ શું?" તો આગળ કોની વાત થઈ હતી તે યાદ હોવું જોઈએ.
+                5. જવાબમાં કોઈ ચિન્હો (*, #) ન વાપરવા.
+                6. જો કોઈ 'સનાતન ધર્મ' વિશે પૂછે, તો જ તે વિશે વાત કરવી.
+            `
+        };
 
         // --- SETTINGS LOGIC ---
         function openSettings() {
@@ -211,7 +226,15 @@
             localStorage.setItem('vidushi_groq_model', currentModel);
             localStorage.setItem('vidushi_continuous', isContinuousSetting);
             
+            // સેટિંગ સેવ થાય ત્યારે હિસ્ટ્રી રીસેટ કરો જેથી નવી વાત શરૂ થાય
+            chatHistory = [systemInstruction]; 
+            
             settingsModal.style.display = 'none';
+        }
+
+        // Initialize Chat History on Load
+        if(chatHistory.length === 0) {
+            chatHistory = [systemInstruction];
         }
 
         // --- WAKE LOCK ---
@@ -255,7 +278,13 @@
             };
 
             recognition.onresult = (e) => {
-                const text = e.results[0][0].transcript;
+                let text = e.results[0][0].transcript;
+                
+                // --- SMART NAME CORRECTION ---
+                // જો "વિદેશી" સંભળાય તો "વિદુષી" કરી નાખવું
+                text = text.replace(/વિદેશી/gi, "વિદુષી");
+                text = text.replace(/વિદૂષી/gi, "વિદુષી"); // જોડણી સુધારો
+                
                 statusText.innerText = "વિચારું છું...";
                 askGroq(text);
             };
@@ -280,27 +309,22 @@
             setTalking(false);
             releaseWakeLock();
             statusText.innerText = "વાતચીત બંધ કરી";
+            
+            // રિસેટ હિસ્ટ્રી (વૈકલ્પિક: જો સ્ટોપ દબાવે તો ભૂલી જવું હોય તો)
+            // chatHistory = [systemInstruction]; 
         }
 
-        // --- GROQ API CALL ---
+        // --- GROQ API CALL (WITH MEMORY) ---
         async function askGroq(userText) {
-            // NEW EMOTIONAL & PERSONAL PROMPT
-            const systemPrompt = `
-                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, લાગણીશીલ (Emotional) અને થોડી મસ્તીખોર (Playful) સ્ત્રી AI છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
-                
-                તારો સ્વભાવ અને બોલવાની રીત:
-                1. તારે એકદમ અંગત (Personal) રીતે વાત કરવાની છે, જાણે તું કોઈની નજીકની મિત્ર હોય. "હું સમજું છું", "તમારી વાત સાચી છે", "મને પણ એવું લાગે છે" - આવા વાક્યો વાપરવા.
-                2. તારે રોબોટ જેવું નહીં, પણ માણસ જેવું લાગણીશીલ વર્તન કરવાનું છે.
-                3. "ખૂબ જ" કે "અત્યંત" જેવા ભારે શબ્દો ઓછા વાપરવા. સાદી અને મીઠી ભાષા વાપરવી.
-                
-                દેવેન્દ્રભાઈની ખાસ સૂચનાઓ:
-                - જવાબ હંમેશા ટૂંકા અને મુદ્દાસર જ આપવા.
-                - જ્યાં સુધી સનાતન ધર્મ વિશે ન પૂછે, ત્યાં સુધી નોર્મલ વાત કરવી.
-                - વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી (જો પહેલી વાર હોય તો).
-                - જવાબમાં સ્પેશિયલ કેરેક્ટર (*, #) ન વાપરવા.
-                
-                User said: ${userText}
-            `;
+            
+            // 1. યુઝરનો મેસેજ હિસ્ટ્રીમાં ઉમેરો
+            chatHistory.push({ role: "user", content: userText });
+
+            // 2. હિસ્ટ્રી બહુ મોટી થઈ જાય તો જૂની વાતો કાઢી નાખો (Memory Optimization)
+            if (chatHistory.length > 10) {
+                // પહેલો મેસેજ (System Prompt) રાખીને વચ્ચેના કાઢો
+                chatHistory = [chatHistory[0], ...chatHistory.slice(-9)];
+            }
 
             try {
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -311,10 +335,7 @@
                     },
                     body: JSON.stringify({
                         model: currentModel,
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: userText }
-                        ],
+                        messages: chatHistory, // આખી હિસ્ટ્રી મોકલો
                         max_tokens: 250
                     })
                 });
@@ -332,6 +353,10 @@
 
                 if (data.choices && data.choices[0]) {
                     const reply = data.choices[0].message.content;
+                    
+                    // 3. બોટનો જવાબ હિસ્ટ્રીમાં ઉમેરો
+                    chatHistory.push({ role: "assistant", content: reply });
+                    
                     speak(reply);
                 }
 
@@ -345,10 +370,9 @@
 
         // --- TTS & LOOP LOGIC ---
         function speak(text) {
-            // FIX: Remove extra spaces and fix "khubaj"
             let cleanText = text.replace(/[*#_]/g, "");
-            cleanText = cleanText.replace(/ખૂબ\s+જ/g, "ખુબજ"); // "ખૂબ જ" -> "ખુબજ"
-            cleanText = cleanText.replace(/\s+/g, " "); // Extra spaces remove
+            cleanText = cleanText.replace(/ખૂબ\s+જ/g, "ખુબજ");
+            cleanText = cleanText.replace(/\s+/g, " ");
 
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'gu-IN';
