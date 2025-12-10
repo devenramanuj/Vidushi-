@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi AI</title>
+    <title>Vidushi AI - Debug Mode</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- BASIC SETUP --- */
@@ -38,8 +38,7 @@
         #mic-container {
             position: fixed; bottom: 50px; left: 50%;
             transform: translateX(-50%); z-index: 20;
-            display: flex; flex-direction: column; align-items: center;
-            width: 90%;
+            display: flex; flex-direction: column; align-items: center; width: 90%;
         }
 
         #status-text {
@@ -77,24 +76,26 @@
         }
 
         /* --- SETTINGS MODAL --- */
-        #settings-modal {
+        #settings-modal, #error-modal {
             display: none; position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95);
             z-index: 100; justify-content: center; align-items: center;
         }
-        .settings-box {
+        .modal-box {
             background: #222; padding: 25px; border-radius: 12px;
             width: 85%; max-width: 350px; border: 1px solid orange;
             color: white; text-align: center;
         }
-        input, select {
+        input, select, textarea {
             width: 100%; padding: 12px; margin: 10px 0;
             background: #333; color: white; border: 1px solid #555; border-radius: 5px;
         }
-        .save-btn {
+        textarea { height: 100px; font-size: 12px; }
+        .btn {
             width: 100%; padding: 12px; background: orange;
             border: none; font-weight: bold; cursor: pointer; color: black; margin-top: 10px;
         }
+        .btn-red { background: #ff4444; color: white; }
     </style>
 </head>
 <body>
@@ -121,9 +122,8 @@
     </div>
 
     <div id="settings-modal">
-        <div class="settings-box">
+        <div class="modal-box">
             <h3>સેટિંગ્સ</h3>
-            
             <label style="display:block; text-align:left; color:orange;">API Key:</label>
             <input type="password" id="apiKeyInput" placeholder="Paste API Key">
             
@@ -132,23 +132,35 @@
                 <option value="gemini-2.0-flash-exp" selected>Gemini 2.0 Flash (Recommended)</option>
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Backup)</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
             </select>
             
-            <button class="save-btn" onclick="saveSettings()">SAVE & CLOSE</button>
+            <button class="btn" onclick="saveSettings()">SAVE & CLOSE</button>
+        </div>
+    </div>
+
+    <div id="error-modal">
+        <div class="modal-box" style="border-color: red;">
+            <h3 style="color: red;">⚠️ Error Details</h3>
+            <p>નીચેની એરર કોપી કરી મને મોકલો:</p>
+            <textarea id="error-text" readonly></textarea>
+            
+            <button class="btn" onclick="copyError()">COPY ERROR</button>
+            <button class="btn btn-red" onclick="closeError()">CLOSE</button>
         </div>
     </div>
 
     <script>
-        // --- ELEMENTS & VARS ---
+        // --- ELEMENTS ---
         const silentVideo = document.getElementById('silent-video');
         const talkingVideo = document.getElementById('talking-video');
         const micBtn = document.getElementById('mic-btn');
         const statusText = document.getElementById('status-text');
         const settingsModal = document.getElementById('settings-modal');
+        const errorModal = document.getElementById('error-modal');
+        const errorText = document.getElementById('error-text');
 
         let apiKey = localStorage.getItem('vidushi_key') || '';
-        // ડિફોલ્ટ મોડલ બદલી નાખ્યું છે
         let currentModel = localStorage.getItem('vidushi_model') || 'gemini-2.0-flash-exp';
         let isContinuousMode = false;
         let wakeLock = null;
@@ -163,12 +175,29 @@
         function saveSettings() {
             apiKey = document.getElementById('apiKeyInput').value.trim();
             currentModel = document.getElementById('modelSelect').value;
-            
             if(!apiKey) { alert("API Key જરૂરી છે!"); return; }
-            
             localStorage.setItem('vidushi_key', apiKey);
             localStorage.setItem('vidushi_model', currentModel);
             settingsModal.style.display = 'none';
+        }
+
+        // --- ERROR HANDLING ---
+        function showError(msg) {
+            errorModal.style.display = 'flex';
+            errorText.value = msg;
+            statusText.innerText = "Error Occurred";
+            isContinuousMode = false; // Stop loop on error
+        }
+
+        function closeError() {
+            errorModal.style.display = 'none';
+        }
+
+        function copyError() {
+            const copyText = document.getElementById("error-text");
+            copyText.select();
+            document.execCommand("copy");
+            alert("Error copied! Paste it in chat.");
         }
 
         // --- WAKE LOCK ---
@@ -217,7 +246,6 @@
         function startConversation() {
             if(!apiKey) { alert("API Key નાખો!"); openSettings(); return; }
             if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-            
             isContinuousMode = true;
             requestWakeLock();
             recognition.start();
@@ -236,14 +264,8 @@
         async function askGemini(userText) {
             const systemPrompt = `
                 તારું નામ 'વિદુષી' છે. તું 'દેવેન્દ્રભાઈ' દ્વારા બનાવવામાં આવી છે.
-                નિયમો:
-                1. સનાતન ધર્મ વિશે પૂછે તો જ કહેવું.
-                2. જવાબ ટૂંકા અને મૌલિક આપવા.
-                3. વિગતવાર જવાબ આપતા પહેલા પૂછવું.
-                4. કોઈ ચિન્હો ન વાપરવા.
-                5. જવાબ ગુજરાતીમાં આપવો.
+                નિયમો: સનાતન ધર્મ વિશે પૂછે તો જ કહેવું. જવાબ ગુજરાતીમાં, ટૂંકો આપવો.
             `;
-
             const prompt = `${systemPrompt}\n\nયુઝર: ${userText}`;
 
             try {
@@ -257,10 +279,11 @@
 
                 if (data.error) {
                     console.error("API Error:", data.error);
-                    // હવે અહીં સાચી એરર દેખાશે
-                    statusText.innerText = "Error: " + data.error.message;
-                    speak("કોઈ ટેકનિકલ સમસ્યા છે. સ્ક્રીન પર એરર જુઓ.");
-                    isContinuousMode = false;
+                    
+                    // Show Permanent Popup
+                    showError(JSON.stringify(data.error, null, 2));
+                    
+                    speak("માફ કરશો, એક એરર આવી છે.");
                     return;
                 }
 
@@ -271,9 +294,8 @@
 
             } catch (error) {
                 console.error(error);
-                statusText.innerText = "Network Error";
+                showError("Network Error: Check internet connection.");
                 speak("ઇન્ટરનેટ કનેક્શન ચેક કરો.");
-                isContinuousMode = false;
             }
         }
 
@@ -283,15 +305,21 @@
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'gu-IN';
 
-            utterance.onstart = () => { statusText.innerText = "બોલી રહી છું..."; setTalking(true); };
+            utterance.onstart = () => { 
+                // Only change text if not showing error
+                if(errorModal.style.display === 'none') {
+                    statusText.innerText = "બોલી રહી છું..."; 
+                }
+                setTalking(true); 
+            };
 
             utterance.onend = () => {
                 setTalking(false);
-                if (isContinuousMode) {
+                if (isContinuousMode && errorModal.style.display === 'none') {
                     statusText.innerText = "ફરી સાંભળું છું...";
                     setTimeout(() => { try { recognition.start(); } catch(e) {} }, 1000); 
                 } else {
-                    statusText.innerText = "વાત કરવા માઈક દબાવો";
+                    if(errorModal.style.display === 'none') statusText.innerText = "વાત કરવા માઈક દબાવો";
                     releaseWakeLock();
                 }
             };
