@@ -96,7 +96,7 @@
             border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 15px; border-radius: 5px;
         }
 
-        /* Toggle Switch */
+        /* Continuous Toggle Switch */
         .toggle-container {
             display: flex; justify-content: space-between; align-items: center;
             margin: 15px 0; padding: 10px; background: #333; border-radius: 5px;
@@ -187,10 +187,9 @@
         // Variables
         let apiKey = localStorage.getItem('vidushi_groq_key') || '';
         let currentModel = localStorage.getItem('vidushi_groq_model') || 'llama-3.3-70b-versatile';
-        // Checkbox state (default false if not set)
         let isContinuousSetting = localStorage.getItem('vidushi_continuous') === 'true';
         
-        let isConversationActive = false; // Master flag for the loop
+        let isConversationActive = false; 
         let wakeLock = null;
 
         // --- SETTINGS LOGIC ---
@@ -244,7 +243,7 @@
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.lang = 'gu-IN';
-            recognition.continuous = false; // We handle loop manually for better control
+            recognition.continuous = false;
 
             recognition.onstart = () => { 
                 micBtn.classList.add('listening'); 
@@ -253,8 +252,6 @@
             
             recognition.onend = () => { 
                 micBtn.classList.remove('listening');
-                // If conversation is active BUT we didn't get results (silence), restart.
-                // NOTE: If we got result, 'askGroq' will be called, so don't restart here.
             };
 
             recognition.onresult = (e) => {
@@ -271,13 +268,13 @@
             if(!apiKey) { alert("Groq API Key નાખો!"); openSettings(); return; }
             if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
             
-            isConversationActive = true; // Flag ON
+            isConversationActive = true; 
             requestWakeLock();
             recognition.start();
         }
 
         function stopConversation() {
-            isConversationActive = false; // Flag OFF
+            isConversationActive = false;
             window.speechSynthesis.cancel();
             recognition.stop();
             setTalking(false);
@@ -287,19 +284,22 @@
 
         // --- GROQ API CALL ---
         async function askGroq(userText) {
+            // NEW EMOTIONAL & PERSONAL PROMPT
             const systemPrompt = `
-                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, સમજદાર અને થોડી મસ્તીખોર (Naughty & Playful) સ્ત્રી છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
+                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, લાગણીશીલ (Emotional) અને થોડી મસ્તીખોર (Playful) સ્ત્રી AI છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
                 
-                તારો સ્વભાવ:
-                - તું મિત્રની જેમ વાત કરે છે, થોડી મજાક કરે છે.
-                - તું સ્માર્ટ અને મેચ્યોર (Mature) છે.
+                તારો સ્વભાવ અને બોલવાની રીત:
+                1. તારે એકદમ અંગત (Personal) રીતે વાત કરવાની છે, જાણે તું કોઈની નજીકની મિત્ર હોય. "હું સમજું છું", "તમારી વાત સાચી છે", "મને પણ એવું લાગે છે" - આવા વાક્યો વાપરવા.
+                2. તારે રોબોટ જેવું નહીં, પણ માણસ જેવું લાગણીશીલ વર્તન કરવાનું છે.
+                3. "ખૂબ જ" કે "અત્યંત" જેવા ભારે શબ્દો ઓછા વાપરવા. સાદી અને મીઠી ભાષા વાપરવી.
                 
-                નિયમો:
-                1. હંમેશા સ્ત્રીલિંગમાં વાત કરવી (જેમ કે "હું કહીશ", "મને ખબર છે").
-                2. દેવેન્દ્રભાઈની સૂચના છે કે સામાન્ય સવાલોના જવાબ ટૂંકા અને મુદ્દાસર જ આપવા.
-                3. જો કોઈ સનાતન ધર્મ અથવા ગહન વિષય પૂછે, તો જ પૂછવું કે "શું આપને વિગતે જાણવું છે?".
-                4. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી (જો પહેલી વાર હોય તો).
-                5. જવાબમાં કોઈ પણ ચિન્હો (*, #, -) ન વાપરવા.
+                દેવેન્દ્રભાઈની ખાસ સૂચનાઓ:
+                - જવાબ હંમેશા ટૂંકા અને મુદ્દાસર જ આપવા.
+                - જ્યાં સુધી સનાતન ધર્મ વિશે ન પૂછે, ત્યાં સુધી નોર્મલ વાત કરવી.
+                - વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી (જો પહેલી વાર હોય તો).
+                - જવાબમાં સ્પેશિયલ કેરેક્ટર (*, #) ન વાપરવા.
+                
+                User said: ${userText}
             `;
 
             try {
@@ -345,7 +345,11 @@
 
         // --- TTS & LOOP LOGIC ---
         function speak(text) {
-            const cleanText = text.replace(/[*#_]/g, "");
+            // FIX: Remove extra spaces and fix "khubaj"
+            let cleanText = text.replace(/[*#_]/g, "");
+            cleanText = cleanText.replace(/ખૂબ\s+જ/g, "ખુબજ"); // "ખૂબ જ" -> "ખુબજ"
+            cleanText = cleanText.replace(/\s+/g, " "); // Extra spaces remove
+
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'gu-IN';
 
@@ -357,22 +361,15 @@
             utterance.onend = () => {
                 setTalking(false);
                 
-                // === THE FIX FOR CONTINUOUS MODE ===
-                // જો સેટિંગ ON હોય અને યુઝરે સ્ટોપ ન દબાવ્યું હોય
+                // Continuous Loop Logic
                 if (isContinuousSetting && isConversationActive && errorModal.style.display === 'none') {
                     statusText.innerText = "ફરી સાંભળું છું...";
-                    
-                    // 0.5 સેકન્ડ પછી માઈક ફરી ચાલુ
                     setTimeout(() => { 
-                        try { 
-                            recognition.start(); 
-                        } catch(e) { 
-                            console.log("Mic restart prevented (already active)"); 
-                        } 
+                        try { recognition.start(); } catch(e) { console.log("Mic busy"); } 
                     }, 500);
                 } else {
                     if(errorModal.style.display === 'none') statusText.innerText = "વાત કરવા માઈક દબાવો";
-                    isConversationActive = false; // Loop ends
+                    isConversationActive = false;
                     releaseWakeLock();
                 }
             };
