@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi Ultimate</title>
+    <title>Vidushi AI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- BASIC SETUP --- */
@@ -17,10 +17,14 @@
         #video-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
         }
-        video { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; }
-        
-        /* Video States */
-        #talking-video, #thinking-video { display: none; }
+        /* બધા વિડીયો એકબીજાની ઉપર રહેશે, JS નક્કી કરશે કોને બતાવવો */
+        video {
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; top: 0; left: 0;
+            display: none; /* શરૂઆતમાં બધા બંધ */
+        }
+        /* Silent વિડીયો ડિફોલ્ટ દેખાવો જોઈએ */
+        #silent-video { display: block; }
 
         /* --- UI LAYER --- */
         #top-bar {
@@ -49,8 +53,7 @@
         #close-img-btn {
             position: absolute; top: -15px; right: -15px;
             background: red; color: white; border: none;
-            border-radius: 50%; width: 30px; height: 30px; cursor: pointer;
-            font-weight: bold;
+            border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-weight: bold;
         }
 
         /* Bottom Controls */
@@ -144,7 +147,10 @@
         </video>
         <video id="thinking-video" muted loop playsinline>
             <source src="thinking.mp4" type="video/mp4">
-            </video>
+        </video>
+        <video id="smiling-video" muted loop playsinline>
+            <source src="smiling.mp4" type="video/mp4">
+        </video>
     </div>
 
     <div id="top-bar">વિદુષી</div>
@@ -185,7 +191,7 @@
                 <option value="mixtral-8x7b-32768">Mixtral</option>
             </select>
             
-            <button class="save-btn clear-mem-btn" onclick="clearMemory()">🧹 Clear Memory (યાદશક્તિ ભૂંસો)</button>
+            <button class="save-btn clear-mem-btn" onclick="clearMemory()">🧹 Clear Memory</button>
             <button class="save-btn" onclick="saveSettings()">SAVE & CLOSE</button>
         </div>
     </div>
@@ -203,6 +209,8 @@
         const silentVideo = document.getElementById('silent-video');
         const talkingVideo = document.getElementById('talking-video');
         const thinkingVideo = document.getElementById('thinking-video');
+        const smilingVideo = document.getElementById('smiling-video');
+        
         const micBtn = document.getElementById('mic-btn');
         const statusText = document.getElementById('status-text');
         const settingsModal = document.getElementById('settings-modal');
@@ -218,36 +226,35 @@
         let isConversationActive = false; 
         let wakeLock = null;
 
-        // --- LONG TERM MEMORY ---
-        // Load chat history from storage if available
+        // Long Term Memory
         let chatHistory = JSON.parse(localStorage.getItem('vidushi_memory')) || [];
 
         // --- VIDEO CONTROL ---
         function switchVideo(state) {
-            // States: 'silent', 'talking', 'thinking'
-            silentVideo.style.display = 'none';
-            talkingVideo.style.display = 'none';
-            thinkingVideo.style.display = 'none';
+            // States: 'silent', 'talking', 'thinking', 'smiling'
+            const videos = [silentVideo, talkingVideo, thinkingVideo, smilingVideo];
             
-            talkingVideo.pause();
-            // thinkingVideo might not exist or play if file missing, catch error
-            try { thinkingVideo.pause(); } catch(e){}
+            // Hide all and pause
+            videos.forEach(v => {
+                v.style.display = 'none';
+                v.pause();
+            });
 
-            if (state === 'talking') {
-                talkingVideo.style.display = 'block';
-                talkingVideo.play().catch(e => console.log(e));
-            } else if (state === 'thinking') {
-                thinkingVideo.style.display = 'block';
-                // If thinking video plays successfully, good. Else fallback to silent via catch block logic if complex
-                // For simple HTML, if file missing, it shows black or poster. 
-                // We assume user puts thinking.mp4. If not, Silent is better.
-                thinkingVideo.play().catch(() => {
-                    thinkingVideo.style.display = 'none';
+            let activeVideo;
+            if (state === 'talking') activeVideo = talkingVideo;
+            else if (state === 'thinking') activeVideo = thinkingVideo;
+            else if (state === 'smiling') activeVideo = smilingVideo;
+            else activeVideo = silentVideo;
+
+            activeVideo.style.display = 'block';
+            activeVideo.play().catch(e => {
+                // If any video fails (e.g. file missing), fallback to silent
+                console.log("Video play error for " + state, e);
+                if (state !== 'silent') {
                     silentVideo.style.display = 'block';
-                });
-            } else {
-                silentVideo.style.display = 'block';
-            }
+                    silentVideo.play().catch(e=>console.log(e));
+                }
+            });
         }
 
         // --- SETTINGS LOGIC ---
@@ -274,7 +281,7 @@
         function clearMemory() {
             chatHistory = [];
             localStorage.removeItem('vidushi_memory');
-            alert("Memory Cleared!");
+            alert("યાદશક્તિ ભૂંસાઈ ગઈ!");
         }
 
         // --- WAKE LOCK ---
@@ -338,10 +345,10 @@
         // --- GROQ API CALL ---
         async function askGroq(userText) {
             
-            // SHOW THINKING VIDEO
+            // Show Thinking Video
             switchVideo('thinking');
 
-            // --- MAGIC ACTIONS (COMMANDS) ---
+            // Magic Actions
             if (userText.toLowerCase().includes("youtube")) {
                 window.open("https://youtube.com", "_blank");
                 speak("YouTube ખોલી રહી છું.");
@@ -353,32 +360,28 @@
                 return;
             }
 
-            // Current Time logic
+            // Time Greeting Logic
             const now = new Date();
             const timeString = now.toLocaleTimeString('gu-IN', { hour: '2-digit', minute: '2-digit' });
             
             const systemPrompt = `
-                તારું નામ 'વિદુષી' છે. તું 'દેવેન્દ્રભાઈ' દ્વારા નિર્મિત એક સ્માર્ટ, લાગણીશીલ અને થોડી નટખટ સ્ત્રી AI છે.
+                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, લાગણીશીલ સ્ત્રી AI છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
                 
                 વર્તમાન સમય: ${timeString}.
                 
                 નિયમો:
-                1. હંમેશા સ્ત્રીલિંગમાં વાત કરવી.
-                2. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી (જો હમણાં જ વાત શરૂ થઈ હોય તો).
-                3. દેવેન્દ્રભાઈની સૂચના છે કે જવાબ હંમેશા ટૂંકા, મુદ્દાસર અને સ્માર્ટ આપવા.
-                4. જો યુઝર કોઈ ચિત્ર/ફોટો/Image માંગે, તો જવાબમાં આ ફોર્મેટ વાપરવું: [IMAGE: ચિત્રનું વર્ણન English માં].
-                   ઉદાહરણ: [IMAGE: a cute cat playing].
-                5. જો કોઈ 'સનાતન ધર્મ' વિશે પૂછે, તો જ તે વિશે વાત કરવી.
-                6. અંગ્રેજીમાં પૂછે તો અંગ્રેજીમાં જવાબ આપવો.
+                1. હંમેશા સ્ત્રીલિંગમાં વાત કરવી (જેમ કે "હું કહીશ", "મને ખબર છે").
+                2. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી (માત્ર એક વાર).
+                3. દેવેન્દ્રભાઈની કડક સૂચના છે કે જવાબ હંમેશા ટૂંકા, મુદ્દાસર અને સ્માર્ટ આપવા.
+                4. જો કોઈ 'સનાતન ધર્મ' વિશે પૂછે, તો જ તે વિશે વાત કરવી.
+                5. જો યુઝર English માં પૂછે તો English માં જવાબ આપવો.
+                6. જવાબમાં કોઈ ચિન્હો (*, #) ન વાપરવા.
+                7. જો યુઝર ચિત્ર (Image) માંગે તો ફોર્મેટ: [IMAGE: description in english].
             `;
 
-            // Prepare History
-            // If history empty, add system prompt. 
-            // NOTE: We re-inject system prompt every time to update TIME, 
-            // but we keep user context.
             let messagesToSend = [
                 { role: "system", content: systemPrompt },
-                ...chatHistory.slice(-10) // Only keep last 10 messages for context
+                ...chatHistory.slice(-10) 
             ];
             
             messagesToSend.push({ role: "user", content: userText });
@@ -450,11 +453,14 @@
         // --- TTS & LOOP LOGIC ---
         function speak(text) {
             let cleanText = text.replace(/[*#_]/g, "");
-            cleanText = cleanText.replace(/\[IMAGE:.*?\]/g, ""); // Hide image command from speech
+            cleanText = cleanText.replace(/\[IMAGE:.*?\]/g, "");
             cleanText = cleanText.replace(/ખૂબ\s+જ/g, "ખુબજ");
             cleanText = cleanText.replace(/\s+/g, " ");
 
-            // Lang Check
+            // Determine if Happy (Simple Keyword Check for Smiling Video)
+            const happyWords = ["આભાર", "મજા", "સરસ", "ગમ્યું", "હસી", "😊", "😂", "ખુશી", "જય શ્રી કૃષ્ણ"];
+            let isHappy = happyWords.some(word => cleanText.includes(word));
+
             const englishCount = (cleanText.match(/[a-zA-Z]/g) || []).length;
             const isEnglish = englishCount > (cleanText.length / 2);
 
@@ -467,22 +473,33 @@
             };
 
             utterance.onend = () => {
-                switchVideo('silent');
-                
-                // Continuous Loop
-                if (isContinuousSetting && isConversationActive && errorModal.style.display === 'none') {
-                    statusText.innerText = "ફરી સાંભળું છું...";
-                    setTimeout(() => { 
-                        try { recognition.start(); } catch(e) { console.log("Mic busy"); } 
-                    }, 500);
+                // If happy, smile for 3 seconds then go silent or loop
+                if (isHappy) {
+                    switchVideo('smiling');
+                    setTimeout(() => {
+                        handleLoopEnd();
+                    }, 3000); // 3 seconds smile
                 } else {
-                    if(errorModal.style.display === 'none') statusText.innerText = "વાત કરવા માઈક દબાવો";
-                    isConversationActive = false;
-                    releaseWakeLock();
+                    handleLoopEnd();
                 }
             };
 
             window.speechSynthesis.speak(utterance);
+        }
+
+        function handleLoopEnd() {
+            switchVideo('silent');
+            
+            if (isContinuousSetting && isConversationActive && errorModal.style.display === 'none') {
+                statusText.innerText = "ફરી સાંભળું છું...";
+                setTimeout(() => { 
+                    try { recognition.start(); } catch(e) { console.log("Mic busy"); } 
+                }, 500);
+            } else {
+                if(errorModal.style.display === 'none') statusText.innerText = "વાત કરવા માઈક દબાવો";
+                isConversationActive = false;
+                releaseWakeLock();
+            }
         }
     </script>
 </body>
