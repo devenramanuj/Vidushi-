@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidushi</title>
+    <title>Vidushi Ultimate</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- BASIC SETUP --- */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: black;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         /* --- VIDEO LAYER --- */
         #video-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
         }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        #talking-video { display: none; }
+        video { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; }
+        
+        /* Video States */
+        #talking-video, #thinking-video { display: none; }
 
         /* --- UI LAYER --- */
         #top-bar {
@@ -26,7 +28,6 @@
             background: rgba(0, 0, 0, 0.5); color: white; text-align: center;
             font-size: 24px; font-weight: bold; z-index: 10;
             text-shadow: 1px 1px 2px black; letter-spacing: 2px;
-            font-family: 'Segoe UI', sans-serif;
         }
 
         #settings-btn {
@@ -35,6 +36,24 @@
             font-size: 26px; padding: 10px; cursor: pointer;
         }
 
+        /* Image Overlay */
+        #image-overlay {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 50;
+            background: rgba(0,0,0,0.8); padding: 10px; border-radius: 15px;
+            border: 2px solid orange; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        #generated-image {
+            max-width: 90vw; max-height: 60vh; border-radius: 10px;
+        }
+        #close-img-btn {
+            position: absolute; top: -15px; right: -15px;
+            background: red; color: white; border: none;
+            border-radius: 50%; width: 30px; height: 30px; cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Bottom Controls */
         #mic-container {
             position: fixed; bottom: 50px; left: 50%;
             transform: translateX(-50%); z-index: 20;
@@ -52,8 +71,7 @@
 
         #mic-btn {
             width: 80px; height: 80px; border-radius: 50%;
-            background: #ff4500; /* Orange */
-            border: 4px solid white;
+            background: #ff4500; border: 4px solid white;
             color: white; font-size: 35px; cursor: pointer;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             display: flex; align-items: center; justify-content: center;
@@ -76,7 +94,7 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
 
-        /* --- SETTINGS MODAL --- */
+        /* Settings Modal */
         #settings-modal, #error-modal {
             display: none; position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95);
@@ -95,7 +113,6 @@
             width: 100%; padding: 12px; background: #ff4500;
             border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 15px; border-radius: 5px;
         }
-
         .toggle-container {
             display: flex; justify-content: space-between; align-items: center;
             margin: 15px 0; padding: 10px; background: #333; border-radius: 5px;
@@ -112,6 +129,8 @@
         }
         input:checked + .slider { background-color: #ff4500; }
         input:checked + .slider:before { transform: translateX(26px); }
+        
+        .clear-mem-btn { background: #444; margin-top: 5px; font-size: 12px; padding: 8px;}
     </style>
 </head>
 <body>
@@ -123,10 +142,18 @@
         <video id="talking-video" muted loop playsinline>
             <source src="talking.mp4" type="video/mp4">
         </video>
+        <video id="thinking-video" muted loop playsinline>
+            <source src="thinking.mp4" type="video/mp4">
+            </video>
     </div>
 
     <div id="top-bar">વિદુષી</div>
     <button id="settings-btn" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+
+    <div id="image-overlay">
+        <button id="close-img-btn" onclick="closeImage()">X</button>
+        <img id="generated-image" src="" alt="Generated Image">
+    </div>
 
     <div id="mic-container">
         <div id="status-text">વાત કરવા માઈક દબાવો</div>
@@ -139,6 +166,7 @@
     <div id="settings-modal">
         <div class="settings-box">
             <h3 style="margin-top:0;">સેટિંગ્સ</h3>
+            
             <label style="display:block; text-align:left; color:#ff4500; font-size:14px;">Groq API Key:</label>
             <input type="password" id="apiKeyInput" placeholder="gsk_...">
             
@@ -156,6 +184,8 @@
                 <option value="llama-3.1-70b-versatile">Llama 3.1</option>
                 <option value="mixtral-8x7b-32768">Mixtral</option>
             </select>
+            
+            <button class="save-btn clear-mem-btn" onclick="clearMemory()">🧹 Clear Memory (યાદશક્તિ ભૂંસો)</button>
             <button class="save-btn" onclick="saveSettings()">SAVE & CLOSE</button>
         </div>
     </div>
@@ -169,49 +199,58 @@
     </div>
 
     <script>
-        // --- ELEMENTS & VARS ---
+        // --- ELEMENTS ---
         const silentVideo = document.getElementById('silent-video');
         const talkingVideo = document.getElementById('talking-video');
+        const thinkingVideo = document.getElementById('thinking-video');
         const micBtn = document.getElementById('mic-btn');
         const statusText = document.getElementById('status-text');
         const settingsModal = document.getElementById('settings-modal');
         const errorModal = document.getElementById('error-modal');
         const continuousToggle = document.getElementById('continuousToggle');
+        const imageOverlay = document.getElementById('image-overlay');
+        const generatedImage = document.getElementById('generated-image');
 
+        // Variables
         let apiKey = localStorage.getItem('vidushi_groq_key') || '';
         let currentModel = localStorage.getItem('vidushi_groq_model') || 'llama-3.3-70b-versatile';
         let isContinuousSetting = localStorage.getItem('vidushi_continuous') === 'true';
         let isConversationActive = false; 
         let wakeLock = null;
-        let isFirstTime = true; // પહેલી વાર વાત કરે છે કે નહીં
 
-        // --- SMART GREETING LOGIC ---
-        function getGreeting() {
-            const hour = new Date().getHours();
-            if (hour < 12) return "સુપ્રભાત";
-            if (hour < 18) return "શુભ બપોર";
-            return "શુભ સાંજ";
+        // --- LONG TERM MEMORY ---
+        // Load chat history from storage if available
+        let chatHistory = JSON.parse(localStorage.getItem('vidushi_memory')) || [];
+
+        // --- VIDEO CONTROL ---
+        function switchVideo(state) {
+            // States: 'silent', 'talking', 'thinking'
+            silentVideo.style.display = 'none';
+            talkingVideo.style.display = 'none';
+            thinkingVideo.style.display = 'none';
+            
+            talkingVideo.pause();
+            // thinkingVideo might not exist or play if file missing, catch error
+            try { thinkingVideo.pause(); } catch(e){}
+
+            if (state === 'talking') {
+                talkingVideo.style.display = 'block';
+                talkingVideo.play().catch(e => console.log(e));
+            } else if (state === 'thinking') {
+                thinkingVideo.style.display = 'block';
+                // If thinking video plays successfully, good. Else fallback to silent via catch block logic if complex
+                // For simple HTML, if file missing, it shows black or poster. 
+                // We assume user puts thinking.mp4. If not, Silent is better.
+                thinkingVideo.play().catch(() => {
+                    thinkingVideo.style.display = 'none';
+                    silentVideo.style.display = 'block';
+                });
+            } else {
+                silentVideo.style.display = 'block';
+            }
         }
 
-        // System Prompt with Dynamic Greeting
-        function getSystemPrompt() {
-            return `
-                તારું નામ 'વિદુષી' છે. તું એક સ્માર્ટ, લાગણીશીલ અને થોડી નટખટ સ્ત્રી AI છે. તને 'દેવેન્દ્રભાઈ' એ બનાવી છે.
-                
-                મહત્વના નિયમો:
-                1. હંમેશા સ્ત્રીલિંગમાં વાત કરવી.
-                2. અત્યારે સમય મુજબ ${getGreeting()} છે.
-                3. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી, પણ માત્ર એક જ વાર.
-                4. દેવેન્દ્રભાઈની કડક સૂચના છે કે જવાબ હંમેશા ટૂંકા, મુદ્દાસર અને સ્માર્ટ આપવા.
-                5. જો કોઈ 'સનાતન ધર્મ' વિશે પૂછે, તો જ તે વિશે વાત કરવી. બાકી મસ્તી-મજાક અને નોર્મલ વાત કરવી.
-                6. જો યુઝર English માં પૂછે તો English માં જવાબ આપવો.
-                7. જો યુઝર કહે કે "હું દેવેન્દ્ર છું", તો એકદમ આદર અને ઉત્સાહથી વાત કરવી કારણ કે તે તારા ક્રિએટર છે.
-            `;
-        }
-
-        let chatHistory = [];
-
-        // --- SETTINGS ---
+        // --- SETTINGS LOGIC ---
         function openSettings() {
             settingsModal.style.display = 'flex';
             document.getElementById('apiKeyInput').value = apiKey;
@@ -223,11 +262,19 @@
             apiKey = document.getElementById('apiKeyInput').value.trim();
             currentModel = document.getElementById('modelSelect').value;
             isContinuousSetting = continuousToggle.checked;
+
+            if(!apiKey.startsWith('gsk_')) { alert("Groq Key 'gsk_' થી શરૂ થવી જોઈએ."); return; }
+            
             localStorage.setItem('vidushi_groq_key', apiKey);
             localStorage.setItem('vidushi_groq_model', currentModel);
             localStorage.setItem('vidushi_continuous', isContinuousSetting);
-            chatHistory = []; // Reset history
             settingsModal.style.display = 'none';
+        }
+
+        function clearMemory() {
+            chatHistory = [];
+            localStorage.removeItem('vidushi_memory');
+            alert("Memory Cleared!");
         }
 
         // --- WAKE LOCK ---
@@ -236,20 +283,6 @@
         }
         function releaseWakeLock() {
             if (wakeLock) { wakeLock.release(); wakeLock = null; }
-        }
-
-        // --- VIDEO SYNC ---
-        function setTalking(isTalking) {
-            if (isTalking) {
-                silentVideo.style.display = 'none';
-                talkingVideo.style.display = 'block';
-                talkingVideo.play().catch(e => console.log(e));
-            } else {
-                silentVideo.style.display = 'block';
-                talkingVideo.style.display = 'none';
-                talkingVideo.pause();
-                talkingVideo.currentTime = 0;
-            }
         }
 
         // --- SPEECH RECOGNITION ---
@@ -261,11 +294,19 @@
             recognition.lang = 'gu-IN';
             recognition.continuous = false;
 
-            recognition.onstart = () => { micBtn.classList.add('listening'); statusText.innerText = "સાંભળું છું..."; };
-            recognition.onend = () => micBtn.classList.remove('listening');
+            recognition.onstart = () => { 
+                micBtn.classList.add('listening'); 
+                statusText.innerText = "સાંભળું છું..."; 
+                switchVideo('silent');
+            };
+            
+            recognition.onend = () => { 
+                micBtn.classList.remove('listening');
+            };
+
             recognition.onresult = (e) => {
                 let text = e.results[0][0].transcript;
-                text = text.replace(/વિદેશી/gi, "વિદુષી"); // Name fix
+                text = text.replace(/વિદેશી/gi, "વિદુષી");
                 text = text.replace(/વિદૂષી/gi, "વિદુષી");
                 
                 statusText.innerText = "વિચારું છું...";
@@ -279,6 +320,7 @@
         function startConversation() {
             if(!apiKey) { alert("Groq API Key નાખો!"); openSettings(); return; }
             if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+            
             isConversationActive = true; 
             requestWakeLock();
             recognition.start();
@@ -288,7 +330,7 @@
             isConversationActive = false;
             window.speechSynthesis.cancel();
             recognition.stop();
-            setTalking(false);
+            switchVideo('silent');
             releaseWakeLock();
             statusText.innerText = "વાતચીત બંધ કરી";
         }
@@ -296,23 +338,50 @@
         // --- GROQ API CALL ---
         async function askGroq(userText) {
             
-            // First time System Prompt Initialization
-            if (chatHistory.length === 0) {
-                chatHistory.push({ role: "system", content: getSystemPrompt() });
+            // SHOW THINKING VIDEO
+            switchVideo('thinking');
+
+            // --- MAGIC ACTIONS (COMMANDS) ---
+            if (userText.toLowerCase().includes("youtube")) {
+                window.open("https://youtube.com", "_blank");
+                speak("YouTube ખોલી રહી છું.");
+                return;
+            }
+            if (userText.toLowerCase().includes("google")) {
+                window.open("https://google.com", "_blank");
+                speak("Google ખોલી રહી છું.");
+                return;
             }
 
-            // *** MASTER RECOGNITION TRICK ***
-            // જો યુઝર નામ બોલે તો સિસ્ટમને ખબર પડે
-            if (userText.includes("હું દેવેન્દ્ર") || userText.includes("દેવેન્દ્રભાઈ")) {
-                userText += " [System Note: User is your Creator, Devendrabhai. Be very respectful and happy.]";
-            }
+            // Current Time logic
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('gu-IN', { hour: '2-digit', minute: '2-digit' });
+            
+            const systemPrompt = `
+                તારું નામ 'વિદુષી' છે. તું 'દેવેન્દ્રભાઈ' દ્વારા નિર્મિત એક સ્માર્ટ, લાગણીશીલ અને થોડી નટખટ સ્ત્રી AI છે.
+                
+                વર્તમાન સમય: ${timeString}.
+                
+                નિયમો:
+                1. હંમેશા સ્ત્રીલિંગમાં વાત કરવી.
+                2. વાતની શરૂઆત "જય શ્રી કૃષ્ણ" થી કરવી (જો હમણાં જ વાત શરૂ થઈ હોય તો).
+                3. દેવેન્દ્રભાઈની સૂચના છે કે જવાબ હંમેશા ટૂંકા, મુદ્દાસર અને સ્માર્ટ આપવા.
+                4. જો યુઝર કોઈ ચિત્ર/ફોટો/Image માંગે, તો જવાબમાં આ ફોર્મેટ વાપરવું: [IMAGE: ચિત્રનું વર્ણન English માં].
+                   ઉદાહરણ: [IMAGE: a cute cat playing].
+                5. જો કોઈ 'સનાતન ધર્મ' વિશે પૂછે, તો જ તે વિશે વાત કરવી.
+                6. અંગ્રેજીમાં પૂછે તો અંગ્રેજીમાં જવાબ આપવો.
+            `;
 
-            chatHistory.push({ role: "user", content: userText });
-
-            // Keep history short (last 10 messages)
-            if (chatHistory.length > 12) {
-                chatHistory = [chatHistory[0], ...chatHistory.slice(-11)];
-            }
+            // Prepare History
+            // If history empty, add system prompt. 
+            // NOTE: We re-inject system prompt every time to update TIME, 
+            // but we keep user context.
+            let messagesToSend = [
+                { role: "system", content: systemPrompt },
+                ...chatHistory.slice(-10) // Only keep last 10 messages for context
+            ];
+            
+            messagesToSend.push({ role: "user", content: userText });
 
             try {
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -323,41 +392,69 @@
                     },
                     body: JSON.stringify({
                         model: currentModel,
-                        messages: chatHistory,
-                        max_tokens: 250
+                        messages: messagesToSend,
+                        max_tokens: 300
                     })
                 });
 
                 const data = await response.json();
 
                 if (data.error) {
+                    console.error("Groq Error:", data.error);
                     document.getElementById('error-desc').innerText = data.error.message;
                     errorModal.style.display = 'flex';
-                    speak("એરર આવી છે.");
+                    speak("માફ કરશો, એરર આવી છે.");
                     isConversationActive = false;
                     return;
                 }
 
                 if (data.choices && data.choices[0]) {
                     const reply = data.choices[0].message.content;
+                    
+                    // Update Memory
+                    chatHistory.push({ role: "user", content: userText });
                     chatHistory.push({ role: "assistant", content: reply });
-                    speak(reply);
+                    localStorage.setItem('vidushi_memory', JSON.stringify(chatHistory));
+
+                    // Check for Image Command
+                    if (reply.includes("[IMAGE:")) {
+                        const imgPrompt = reply.match(/\[IMAGE: (.*?)\]/)[1];
+                        showImage(imgPrompt);
+                        const speakText = reply.replace(/\[IMAGE:.*?\]/, "આ રહ્યું ચિત્ર.");
+                        speak(speakText);
+                    } else {
+                        speak(reply);
+                    }
                 }
 
             } catch (error) {
+                console.error(error);
                 statusText.innerText = "Net Error";
                 speak("ઇન્ટરનેટ કનેક્શન ચેક કરો.");
                 isConversationActive = false;
             }
         }
 
-        // --- TTS ---
+        // --- IMAGE GENERATION ---
+        function showImage(prompt) {
+            const encodedPrompt = encodeURIComponent(prompt);
+            const url = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
+            generatedImage.src = url;
+            imageOverlay.style.display = 'block';
+        }
+
+        function closeImage() {
+            imageOverlay.style.display = 'none';
+        }
+
+        // --- TTS & LOOP LOGIC ---
         function speak(text) {
             let cleanText = text.replace(/[*#_]/g, "");
+            cleanText = cleanText.replace(/\[IMAGE:.*?\]/g, ""); // Hide image command from speech
             cleanText = cleanText.replace(/ખૂબ\s+જ/g, "ખુબજ");
             cleanText = cleanText.replace(/\s+/g, " ");
 
-            // Language Detection for TTS Voice
+            // Lang Check
             const englishCount = (cleanText.match(/[a-zA-Z]/g) || []).length;
             const isEnglish = englishCount > (cleanText.length / 2);
 
@@ -366,18 +463,18 @@
 
             utterance.onstart = () => { 
                 if(errorModal.style.display === 'none') statusText.innerText = "બોલી રહી છું..."; 
-                setTalking(true); 
+                switchVideo('talking');
             };
 
             utterance.onend = () => {
-                setTalking(false);
+                switchVideo('silent');
                 
                 // Continuous Loop
                 if (isContinuousSetting && isConversationActive && errorModal.style.display === 'none') {
                     statusText.innerText = "ફરી સાંભળું છું...";
                     setTimeout(() => { 
                         try { recognition.start(); } catch(e) { console.log("Mic busy"); } 
-                    }, 600);
+                    }, 500);
                 } else {
                     if(errorModal.style.display === 'none') statusText.innerText = "વાત કરવા માઈક દબાવો";
                     isConversationActive = false;
